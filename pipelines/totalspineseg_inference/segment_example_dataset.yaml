@@ -1,0 +1,4 @@
+dataset_root: '../../examples/spider_dataset/'
+image_query: '`source` == "raw"'
+output_derivative_name: 'totalspineseg'
+totalspineseg_release: 'r20251124'

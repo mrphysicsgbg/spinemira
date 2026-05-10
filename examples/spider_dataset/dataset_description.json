@@ -1,0 +1,12 @@
+{
+    "Name": "SPIDER",
+    "BIDSVersion": "1.10.0",
+    "HEDVersion": "8.2.0",
+    "DatasetType": "raw",
+    "License": "CC-BY 4.0",
+    "ReferencesAndLinks": [
+        "https://doi.org/10.1038/s41597-024-03090-w",
+	"https://zenodo.org/doi/10.5281/zenodo.8009679"
+    ],
+    "DatasetDOI": "doi:10.5281/zenodo.8009679"
+}

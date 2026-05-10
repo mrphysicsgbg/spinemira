@@ -1,0 +1,12 @@
+{
+    "Name": "Masks",
+    "BIDSVersion": "1.10.0",
+    "DatasetType": "derivative",
+    "GeneratedBy": [{"Name": "segmentation"}],
+    "SourceDatasets": [
+        {
+            "DOI": "10.5281/zenodo.8009679",
+            "URL": "https://zenodo.org/doi/10.5281/zenodo.8009679"
+        }
+    ]
+}

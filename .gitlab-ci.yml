@@ -1,0 +1,28 @@
+
+image: registry.git.vgregion.se/spinalytics/spinalytics-docker-image
+before_script:
+  - apt-get update && apt-get install -y curl build-essential git pre-commit
+  - git config --global --add safe.directory $CI_PROJECT_DIR
+  - curl -sSL https://install.python-poetry.org | python3 -
+  - export PATH="$HOME/.local/bin:$PATH"
+  - poetry config virtualenvs.in-project true
+  - make install-dev
+stages:
+  - check
+  - test
+  - build
+check:
+  stage: check
+  script:
+    - make check
+test:
+  stage: test
+  script:
+    - make test
+build:
+  stage: build
+  script:
+    - make build
+  artifacts:
+    paths:
+      - dist/
