@@ -1,0 +1,21 @@
+#
+# Configuration file for pipeline estimate_dsca.py
+#
+
+dataset_root: '/workspace/data/datasets/NORDSTEN/bids'
+images_query: '`source` == "raw"'
+output_derivative_name: 'estimate_dsca'
+segmentation_query: '`pipeline` == "totalspineseg" and `additional_suffixes` == "dseg"'
+levels_query: '`pipeline` == "totalspineseg" and `additional_suffixes` == "levels"'
+compute_narrowest_level_for_levels:
+  - DISC_L2_L3
+  - DISC_L3_L4
+  - DISC_L4_L5
+compute_narrowest_isolated_level_for_levels:
+  - DISC_T11_T12
+  - DISC_T12_L1
+  - DISC_L1_L2
+  - DISC_L2_L3
+  - DISC_L3_L4
+  - DISC_L4_L5
+  - DISC_L5_S

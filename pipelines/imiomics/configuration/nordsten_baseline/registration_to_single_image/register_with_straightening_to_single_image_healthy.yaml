@@ -1,0 +1,17 @@
+#
+# Configuration file for register_with_straightening_to_single_image.py
+#
+# Registers all images in a dataset to the reference images obtained by query specified by "fixed_image_query.
+# Reference image is exported to "fixed_image_bundle_path" and can be used as reference image for registration
+# of other datasets.
+#
+
+dataset_root: '/workspace/data/datasets/Healthy/bids'
+fixed_image_query: '`participant_id` == "sub-0004" and `source` == "raw" and `ses` == "noload"'
+fixed_image_bundle_path: '/workspace/data/atlas/healthy/healthy-sub-0004-straightened.nii.gz'
+moving_images_query: '`source` == "raw" and `ses` == "noload"'
+output_derivative_name: 'registered_straightened_single_image'
+segmentation_query: '`pipeline` == "totalspineseg" and `additional_suffixes` == "dseg"'
+levels_query: '`pipeline` == "totalspineseg" and `additional_suffixes` == "levels"'
+
+pydeform: '/workspace/data/configuration/registration_to_single_image/pydeform.yaml'

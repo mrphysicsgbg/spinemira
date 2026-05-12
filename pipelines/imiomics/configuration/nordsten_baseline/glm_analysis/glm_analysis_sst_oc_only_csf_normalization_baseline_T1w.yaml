@@ -1,0 +1,24 @@
+#
+# Configuration file for pipeline glm_analysis.py
+#
+# Operates on T1-weighted images and images collected from 1.5 T MRI systems from the NORDSTEN dataset. Listhesis samples are excluded.
+#
+# The included images have not undergone intensity normalization, apart from scaling to the mode of the segmented CSF.
+#
+# The GLM models ODI, age and sex. Permutation testing is done with 5000 permutations and threshold free cluster enhancement.
+#
+
+dataset_root: '/workspace/data/datasets/NORDSTEN/bids'
+image_weight: 'T1w'
+mask_path: '/workspace/data/atlas/healthy/healthy-sub-0004-straightened_T1w_mask.nii.gz'
+images_query: '`pipeline` == "registered_straightened_single_image" and `sub-cohort` != "listhesis" and `meta_MagneticFieldStrength` == 1.5 and additional_suffixes.isna()'
+output_dir: '/workspace/data/results/glm/sst-oc-baseline-only-csf-normalization'
+regressors: 'odi_baseline;age_at_baseline;sex'
+categorical_regressor_mappings:
+    sex:
+        F: 1
+        M: 0
+two_sided_tests: True
+n_jobs: 32
+n_permutations: 5000
+tfce: True

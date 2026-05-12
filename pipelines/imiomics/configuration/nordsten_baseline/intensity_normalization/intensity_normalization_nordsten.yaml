@@ -1,0 +1,18 @@
+#
+# Configuration file for pipeline intensity_normalization.py
+#
+# Normalizes intensities of images to a reference image specified by "reference_image_bundle_path".
+#
+
+dataset_root: '/workspace/data/datasets/NORDSTEN/bids'
+reference_image_bundle_path: '/workspace/data/atlas/healthy/healthy-sub-0004-straightened.nii.gz'
+images_query: '`pipeline` == "registered_straightened_single_image" and additional_suffixes.isna()'
+output_derivative_name: 'registered_straightened_single_image_normalized'
+segmentation_query: '`pipeline` == "registered_straightened_single_image" and `additional_suffixes` == "dseg"'
+mask_query: '`pipeline` == "registered_straightened_single_image" and `additional_suffixes` == "mask"'
+segmentation_label_intervals:
+  spinal_canal: (2, 2)
+  vertebrae: (11, 45)
+  discs: (63, 100)
+num_bins: 512
+background_rel_weight: 0.1

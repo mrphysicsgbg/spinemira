@@ -1,0 +1,27 @@
+  #
+  # Configuration file for deform.
+  #
+
+  pyramid_levels: 3
+  pyramid_stop_level: 0
+  regularization_weight: 0.2
+  step_size: 0.1
+  block_energy_epsilon: 1.0e-08
+  block_size:
+    - 16
+    - 16
+    - 16
+  max_iteration_count: 200
+  landmarks_weight: 0.01
+  landmarks_decay: 8.0
+  landmarks_stop_level: 2
+  image_slots:
+    - resampler: gaussian
+      normalize: true
+      cost_function: ssd
+    - resampler: gaussian
+      normalize: true
+      cost_function: ssd
+    - resampler: gaussian
+      normalize: true
+      cost_function: ssd
