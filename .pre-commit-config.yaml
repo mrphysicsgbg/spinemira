@@ -22,8 +22,8 @@ repos:
   - repo: local
     hooks:
       - id: mypy
-        name: mypy (poetry)
-        entry: poetry run mypy
+        name: mypy (uv)
+        entry: uv run mypy
         language: system
         types: [python]
         exclude: ^(examples)/
