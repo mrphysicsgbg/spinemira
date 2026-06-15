@@ -148,7 +148,7 @@ def init_totalspineseg(cnf: PipelineConfig):
 
 
 def configure_no_stalling(no_stalling: bool):
-    if no_stalling:
+    if no_stalling and "forkserver" in mp.get_all_start_methods():
         mp.set_start_method("forkserver", force=True)
         logger.info("Start method for multiprocessing was set to `forkserver`.")
 
