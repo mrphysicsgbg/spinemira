@@ -9,51 +9,49 @@ import sys
 JUPYTER_PORT = 18888
 
 
-def ensure_poetry():
-    """Verify Poetry is installed and available on PATH."""
-    if shutil.which("poetry") is None:
+def ensure_uv():
+    """Verify uv is installed and available on PATH."""
+    if shutil.which("uv") is None:
         print(
-            "Error: Poetry is not installed or not available on your PATH.\n"
-            "Install Poetry from https://python-poetry.org/docs/#installation",
+            "Error: uv is not installed or not available on your PATH.\n",
             file=sys.stderr,
         )
         sys.exit(1)
 
 
 def run(*cmd):
+    ensure_uv()
     subprocess.run(cmd, check=True)
 
 
 def install():
-    """Install the poetry environment."""
-    print("Creating virtual environment using pyenv and poetry")
-    run("poetry", "install")
+    """Install the uv environment."""
+    print("Creating virtual environment using uv")
+    run("uv", "sync")
 
 
 def install_dev():
-    """Install the poetry environment with dev dependencies and pre-commit hooks."""
-    print("Creating virtual environment using pyenv and poetry")
-    run("poetry", "install", "--with", "dev")
+    """Install the uv environment with dev dependencies and pre-commit hooks."""
+    print("Creating virtual environment using uv")
+    run("uv", "sync", "--group", "dev")
 
     print("Installing pre-commit hooks")
-    run("poetry", "run", "pre-commit", "install")
+    run("uv", "run", "pre-commit", "install")
 
 
 def check():
     """Run code quality tools."""
-    print(
-        "Checking Poetry lock file consistency with 'pyproject.toml': Running poetry check --lock"
-    )
-    run("poetry", "check", "--lock")
+    print("Checking uv lock file consistency with 'pyproject.toml'")
+    run("uv", "lock", "--check")
 
     print("Linting code: Running pre-commit")
-    run("poetry", "run", "pre-commit", "run", "-a")
+    run("uv", "run", "pre-commit", "run", "-a")
 
 
 def test():
     """Test the code with pytest."""
     print("Testing code: Running pytest")
-    run("poetry", "run", "pytest")
+    run("uv", "run", "pytest")
 
 
 def clean_build():
@@ -62,18 +60,18 @@ def clean_build():
 
 
 def build():
-    """Build wheel file using poetry."""
+    """Build wheel file using uv."""
     clean_build()
 
     print("Creating wheel file")
-    run("poetry", "build")
+    run("uv", "build")
 
 
 def jupyter_kernel():
     """Install kernel for Jupyter."""
     print("Install Jupyter kernel")
     run(
-        "poetry",
+        "uv",
         "run",
         "python",
         "-m",
@@ -91,7 +89,7 @@ def jupyter():
     """Run Jupyter Lab."""
     print("Starting Jupyter Lab")
     run(
-        "poetry",
+        "uv",
         "run",
         "jupyter",
         "lab",

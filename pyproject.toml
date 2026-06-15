@@ -2,11 +2,16 @@
 name = "spinemira"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "Alice Nilsson",email = "alice.nilsson@vgregion.se"}
-]
-readme = "README.md"
+authors = [{ name = "Alice Nilsson", email = "alice.nilsson@vgregion.se" }]
 requires-python = ">=3.11"
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
 dependencies = [
     "simpleitk (>=2.5.2,<3.0.0)",
     "pandas (>=2.3.3,<3.0.0)",
@@ -24,35 +29,47 @@ dependencies = [
     "numpy (>=2.4.4,<3.0.0)",
 ]
 
-[tool.poetry]
-packages = [{include = "spinemira", from = "src"}]
-include = ["src/spinemira/py.typed"]
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2,<9",
+    "ruff>=0.14.2,<0.15",
+    "mypy>=1.18.2,<2",
+    "pre-commit>=4.3.0,<5",
+    "ipympl>=0.9.8,<0.10",
+    "jupyterlab>=4.4.10,<5",
+    "scipy-stubs>=1.16.3.0,<2",
+    "types-tqdm>=4.67.0.20250809,<5",
+    "pandas-stubs>=2.3.2.250926,<3",
+    "types-pyyaml>=6.0.12.20250915,<7",
+    "ipykernel>=7.1.0,<8",
+]
 
+[tool.uv]
+default-groups = "all"
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.4.2"
-ruff = "^0.14.2"
-mypy = "^1.18.2"
-pre-commit = "^4.3.0"
-ipympl = "^0.9.8"
-jupyterlab = "^4.4.10"
-scipy-stubs = "^1.16.3.0"
-types-tqdm = "^4.67.0.20250809"
-pandas-stubs = "^2.3.2.250926"
-types-pyyaml = "^6.0.12.20250915"
-ipykernel = "^7.1.0"
-
-
-[tool.poetry.dependencies]
-
-[[tool.poetry.source]]
+[[tool.uv.index]]
 name = "gitlab-spinemira"
 url = "https://git.vgregion.se/api/v4/projects/6781/packages/pypi/simple"
-priority = "primary"
+default = true
+
+[tool.hatch.build.targets.sdist]
+include = ["src/spinemira"]
+
+[tool.hatch.build.targets.sdist.force-include]
+"src/spinemira/py.typed" = "src/spinemira/py.typed"
+
+[tool.hatch.build.targets.wheel]
+include = ["src/spinemira"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/spinemira" = "spinemira"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.mypy]
-disable_error_code = ["import-untyped"]
+disable_error_code = [
+    "import-untyped",
+    "import-not-found"
+]
