@@ -6,7 +6,7 @@ before_script:
   - curl -sSL https://install.python-poetry.org | python3 -
   - export PATH="$HOME/.local/bin:$PATH"
   - poetry config virtualenvs.in-project true
-  - make install-dev
+  - python tasks.py install-dev
 stages:
   - check
   - test
@@ -14,15 +14,15 @@ stages:
 check:
   stage: check
   script:
-    - make check
+    - python tasks.py check
 test:
   stage: test
   script:
-    - make test
+    - python tasks.py test
 build:
   stage: build
   script:
-    - make build
+    - python tasks.py build
   artifacts:
     paths:
       - dist/
