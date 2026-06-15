@@ -7,12 +7,15 @@ import sys
 from typing import Any, Callable
 import yaml
 
+from spinemira.core.logging import log_environment
+
 
 def with_cli_config(
     *,
     env_map: dict[str, str] | None = None,
     config_arg: str = "config",
     log_args: bool = True,
+    log_platform_and_packages: bool = True,
     log_fn: Callable | None = None,
 ):
     """Decorator that injects args into a function
@@ -27,6 +30,8 @@ def with_cli_config(
         Name of the argument for resolving configuration file, by default "config"
     log_args : bool, optional
         Configures is logging of arguments should be performed, by default True
+    log_platform_and_packages : bool, optional
+        If set, then information of platform and installed packages will be included in the log
     log_fn : Callable | None, optional
         Method to call for logging, will print to standard output if unspecified, by default None
     """
@@ -103,6 +108,9 @@ def with_cli_config(
                 else:
                     print(log_message)
 
+            if log_platform_and_packages:
+                log_environment(log_fn)
+
             ns, _ = parser.parse_known_args(argv)
             cli = vars(ns)
 
@@ -148,7 +156,10 @@ def with_cli_config(
 
                 log_message = "\n".join(
                     [
+                        "",
+                        "-" * 80,
                         f"Passing the following arguments to {fn.__name__}:",
+                        "-" * 80,
                         *(f"    {k}: {v}" for k, v in payload.items()),
                     ]
                 )

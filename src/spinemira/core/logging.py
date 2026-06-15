@@ -1,6 +1,11 @@
 from datetime import datetime
+from importlib.metadata import distributions
 import logging
+import os
 from pathlib import Path
+import platform
+import sys
+from typing import Callable
 
 
 def setup_logging(
@@ -46,3 +51,50 @@ def setup_logging(
         file_handler.setFormatter(formatter)
 
         root.addHandler(file_handler)
+
+
+def log_environment(log_fn: Callable | None) -> None:
+    """Log Python environment and installed packages
+
+    log_fn : Callable | None, optional
+        Method to call for logging, will print to standard output if unspecified, by default None
+    """
+
+    packages = sorted(
+        (
+            dist.metadata["Name"] if "Name" in dist.metadata else "UNKNOWN",
+            dist.version,
+        )
+        for dist in distributions()
+    )
+
+    log_message = "\n".join(
+        [
+            "",
+            "-" * 80,
+            "Environment",
+            "-" * 80,
+            f"Python version       : {sys.version.replace(chr(10), ' ')}",
+            f"Python executable    : {sys.executable}",
+            f"Python implementation: {platform.python_implementation()}",
+            f"Python build         : {platform.python_build()}",
+            f"Python compiler      : {platform.python_compiler()}",
+            f"Platform             : {platform.platform()}",
+            f"System               : {platform.system()}",
+            f"Release              : {platform.release()}",
+            f"Machine              : {platform.machine()}",
+            f"Processor            : {platform.processor()}",
+            f"Hostname             : {platform.node()}",
+            f"Current directory    : {os.getcwd()}",
+            f"Virtual environment  : {sys.prefix != sys.base_prefix}",
+            "-" * 80,
+            f"Installed packages ({len(packages)})",
+            "-" * 80,
+            *(f"    {name}=={version}" for name, version in packages),
+        ]
+    )
+
+    if log_fn:
+        log_fn(log_message)
+    else:
+        print(log_message)
