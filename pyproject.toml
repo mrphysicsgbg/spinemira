@@ -42,6 +42,7 @@ dev = [
 
 segmentation = [
     "totalspineseg[nnunetv2] (>=20260429,<20260430)",
+    "kornia<0.8", # Auglab which is used by totalspineseg imports Tensor from kornia.core which is removed in future versions / 260615
 ]
 
 registration = [
