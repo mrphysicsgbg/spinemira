@@ -41,7 +41,7 @@ dev = [
 ]
 
 segmentation = [
-    "totalspineseg[nnunetv2] (>=20260429,<20260430)",
+    "totalspineseg[nnunetv2]>=20260623",
     "kornia<0.8", # Auglab which is used by totalspineseg imports Tensor from kornia.core which is removed in future versions / 260615
 ]
 
@@ -54,6 +54,9 @@ registration = [
 name = "gitlab-spinemira"
 url = "https://git.vgregion.se/api/v4/projects/6781/packages/pypi/simple"
 default = true
+
+[tool.uv.sources]
+totalspineseg = { git = "https://github.com/neuropoly/totalspineseg.git", rev = "b808c04095809ebee10f8bd93604858c3decbccf" }
 
 [tool.hatch.build.targets.sdist]
 include = ["src/spinemira"]
