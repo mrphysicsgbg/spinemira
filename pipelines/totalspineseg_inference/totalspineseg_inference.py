@@ -11,6 +11,7 @@ import shutil
 import tempfile
 import multiprocessing as mp
 
+import torch
 from totalspineseg.init_inference import init_inference
 from totalspineseg.utils.utils import ZIP_URLS as TOTALSPINSEG_URLS
 from totalspineseg.inference import inference
@@ -21,6 +22,8 @@ from spinemira.pipelines.config import with_cli_config
 
 
 logger = logging.getLogger(__name__)
+
+_TORCH_DEVICE: torch.device = None
 
 
 @dataclass
@@ -43,6 +46,27 @@ class Job:
 
     output_label_map: Path
     output_levels: Path
+
+
+def get_torch_device(cnf: PipelineConfig) -> torch.device:
+    global _TORCH_DEVICE
+
+    if _TORCH_DEVICE is None:
+        logger.info(f"Configuring device ({cnf.device}) for torch.")
+
+        if cnf.device == "cpu":
+            torch.set_num_threads(mp.cpu_count())
+            _TORCH_DEVICE = torch.device("cpu")
+        elif cnf.device == "cuda":
+            torch.set_num_threads(1)
+            torch.set_num_interop_threads(1)
+            _TORCH_DEVICE = torch.device("cuda")
+        elif cnf.device == "mps":
+            _TORCH_DEVICE = torch.device("mps")
+        else:
+            raise ValueError("Device must be either cpu, cuda or mps.")
+
+    return _TORCH_DEVICE
 
 
 def build_image_query(base: str, image_weight: str) -> str:
@@ -103,7 +127,7 @@ def process_job(cnf: PipelineConfig, job: Job):
             output_path=tmpdir,
             data_path=cnf.totalspineseg_data_dir,
             default_release=cnf.totalspineseg_release,
-            device=cnf.device,
+            device=get_torch_device(cnf),
             quiet=cnf.totalspineseg_quiet,
         )
 
