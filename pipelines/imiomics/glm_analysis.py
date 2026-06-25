@@ -9,7 +9,7 @@ import nibabel as nib
 from nibabel.filebasedimages import FileBasedImage
 
 from spinemira.core.logging import setup_logging
-from spinemira.io.bids import Layout
+from spinemira.io.mids import Layout
 from spinemira.pipelines.config import with_cli_config
 from common.common import PipelineConfig, build_image_query, index_dataset
 

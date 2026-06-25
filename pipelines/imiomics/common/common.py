@@ -15,7 +15,7 @@ from spinemira.core.segmentation.utils import (
     get_level_coordinates,
     get_roi_mask,
 )
-from spinemira.io.bids import Layout, add_suffix_to_path_name
+from spinemira.io.mids import Layout, add_suffix_to_path_name
 
 
 logger = logging.getLogger(__name__)

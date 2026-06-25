@@ -17,7 +17,7 @@ from totalspineseg.utils.utils import ZIP_URLS as TOTALSPINSEG_URLS
 from totalspineseg.inference import inference
 
 from spinemira.core.logging import setup_logging
-from spinemira.io.bids import Layout, resolve_derivative
+from spinemira.io.mids import Layout, resolve_derivative
 from spinemira.pipelines.config import with_cli_config
 
 

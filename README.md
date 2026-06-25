@@ -10,6 +10,4 @@ Support for longitudinal analysis and time-resolved tracking of tissue changes i
 
 ## Dataset structure
 
-spinemira uses a BIDS like dataset structure following the standard BIDS specification, but with some extensions:
-
-- An extra suffix for all files are allowed to distinguish between segmentation or other derived data which is dependent on a contrast. E.g. for an image of `T1w` contrast and with segmentation a filename such as `sub-001_T1w_dseg.nii.gz` is suitable.
+spinemira uses a MIDS like dataset structure following the standard MIDS specification.

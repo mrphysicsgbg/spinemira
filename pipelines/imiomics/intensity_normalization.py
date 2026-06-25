@@ -9,8 +9,8 @@ from pandas import Series
 from spinemira.core.filters import multiple_regions_histogram_matching, reduce_label_map
 from spinemira.core.io import load_image, load_label_map
 from spinemira.core.logging import setup_logging
-from spinemira.io import bids
-from spinemira.io.bids import Layout, resolve_derivative
+from spinemira.io import mids
+from spinemira.io.mids import Layout, resolve_derivative
 from spinemira.pipelines.config import with_cli_config
 
 from common.common import ImageBundle, PipelineConfig, build_image_query, index_dataset
@@ -53,7 +53,7 @@ def get_reference_image_bundle(
     if cnf.reference_image_bundle_path.exists():
         path = cnf.reference_image_bundle_path
     else:
-        path = bids.add_suffix_to_path_name(
+        path = mids.add_suffix_to_path_name(
             cnf.reference_image_bundle_path, cnf.image_weight
         )
 
