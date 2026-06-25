@@ -12,6 +12,21 @@ IMAGE_EXTENSIONS = {".nii", ".nii.gz", ".h5", ".hdf5"}
 SIDECAR_EXTENSIONS = {".json", ".tsv", ".bval", ".bvec"}
 VALID_EXTENSIONS = IMAGE_EXTENSIONS.union(SIDECAR_EXTENSIONS)
 
+FILE_NAME_ENTITY_KEYS = [
+    "sub",
+    "ses",
+    "acq",
+    "dir",
+    "run",
+    "mod",
+    "echo",
+    "flip",
+    "inv",
+    "mt",
+    "part",
+    "space",
+]
+
 
 class Layout:
     """
@@ -786,6 +801,46 @@ def extract_entities_from_path(rel_path: Path) -> dict[str, Any]:
         entities["participant_id"] = "sub-" + entities["sub"]
 
     return entities
+
+
+def file_name_from_entities(
+    entities: dict[str, Any],
+    suffix: str,
+    extension: str,
+    additional_suffixes: str | None = None,
+) -> str:
+    """
+    Create a file name from a dictionary of entities.
+
+    Parameters
+    ----------
+    entities : dict[str, Any]
+        Entities
+    suffix : str
+        Suffix
+    extension : str
+        File extension
+    additional_suffixes : str | None, optional
+        Additional suffixes to append, by default None
+
+    Returns
+    -------
+    str
+        Filename from entities
+    """
+
+    filen_name_parts = []
+
+    for key in FILE_NAME_ENTITY_KEYS:
+        if key in entities:
+            filen_name_parts.append(f"{key}-{entities[key]}")
+
+    filen_name_parts.append(suffix)
+
+    if additional_suffixes is not None:
+        filen_name_parts.append(additional_suffixes)
+
+    return "_".join(filen_name_parts) + extension
 
 
 def is_valid_bids_file(fname: str) -> bool:
