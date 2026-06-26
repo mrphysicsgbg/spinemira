@@ -55,9 +55,6 @@ name = "gitlab-spinemira"
 url = "https://git.vgregion.se/api/v4/projects/6781/packages/pypi/simple"
 default = true
 
-[tool.uv.sources]
-totalspineseg = { git = "https://github.com/neuropoly/totalspineseg.git", rev = "b808c04095809ebee10f8bd93604858c3decbccf" }
-
 [tool.hatch.build.targets.sdist]
 include = ["src/spinemira"]
 
