@@ -12,8 +12,8 @@ import numpy as np
 from spinemira.core.io import load_image, load_label_map
 from spinemira.core.logging import setup_logging
 from spinemira.core.segmentation.labels import TotalSpineSegLabels
-from spinemira.io import bids
-from spinemira.io.bids import Layout, resolve_derivative
+from spinemira.io import mids
+from spinemira.io.mids import Layout, resolve_derivative
 from spinemira.pipelines.config import with_cli_config
 
 from common.common import ImageBundle
@@ -233,7 +233,7 @@ def process_summary(
             logger.info("Skipping not existing file.")
             continue
 
-        entities = bids.extract_entities_from_path(job.output_file)
+        entities = mids.extract_entities_from_path(job.output_file)
         spinal_canal_cross_sectional_areas: dict[str, float] = json.loads(
             job.output_file.read_text()
         )
@@ -287,7 +287,7 @@ def process_narrowest_level_per_subject(
             logger.info("Skipping not existing file.")
             continue
 
-        entities = bids.extract_entities_from_path(job.output_file)
+        entities = mids.extract_entities_from_path(job.output_file)
 
         # Load cross sectional areas
         spinal_canal_cross_sectional_areas: dict[str, float] = json.loads(
@@ -358,7 +358,7 @@ def process_isolated_narrowest_level_per_subject(
             logger.info("Skipping not existing file.")
             continue
 
-        entities = bids.extract_entities_from_path(job.output_file)
+        entities = mids.extract_entities_from_path(job.output_file)
 
         # Load cross sectional areas
         spinal_canal_cross_sectional_areas: dict[str, float] = json.loads(

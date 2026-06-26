@@ -1,10 +1,10 @@
 from pathlib import Path
 from unittest import TestCase
 
-from spinemira.io.bids import Layout
+from spinemira.io.mids import Layout
 
 
-class TestBidsLayout(TestCase):
+class TestMidsLayout(TestCase):
     """Test Layout using example dataset."""
 
     def setUp(self):

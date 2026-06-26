@@ -15,8 +15,8 @@ from spinemira.core.registration.utils import get_translation_transform_from_lan
 from spinemira.core.segmentation.labels import TotalSpineSegLabels
 from spinemira.core.segmentation.metrics import dice
 from spinemira.core.segmentation.utils import get_level_coordinates
-from spinemira.io import bids
-from spinemira.io.bids import (
+from spinemira.io import mids
+from spinemira.io.mids import (
     Layout,
     add_suffix_to_path_name,
     extract_entities_from_path,
@@ -425,7 +425,7 @@ def collect_registration_metrics(
         with open(registration_sidecar, "r") as f:
             data = json.load(f)
 
-        fields = bids.extract_entities_from_path(registration_sidecar_path)
+        fields = mids.extract_entities_from_path(registration_sidecar_path)
 
         dice = {f"dice_{key}": value for key, value in data["dice"].items()}
 
