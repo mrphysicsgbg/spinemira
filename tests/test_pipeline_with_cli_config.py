@@ -20,7 +20,7 @@ class TestWithCliConfig(TestCase):
             "bar": True,
         }
 
-        with NamedTemporaryFile(mode="w") as cfg_file:
+        with NamedTemporaryFile(mode="w", delete=False) as cfg_file:
             yaml.safe_dump(cfg, cfg_file)
             cfg_file.flush()
 
@@ -37,7 +37,7 @@ class TestWithCliConfig(TestCase):
             "bar": "bar bar",
         }
 
-        with NamedTemporaryFile(mode="w") as cfg_file:
+        with NamedTemporaryFile(mode="w", delete=False) as cfg_file:
             yaml.safe_dump(cfg, cfg_file)
             cfg_file.flush()
 
