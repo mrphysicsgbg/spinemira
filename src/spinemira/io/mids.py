@@ -905,18 +905,23 @@ def resolve_data_root(path: Path, resolve_raw_root: bool = True) -> Path:
 
 def resolve_derivative(
     original: Path,
-    derivative_name: str,
+    derivative_name: str | None = None,
+    derivative_folder: Path | None = None,
     suffix: str | None = None,
     extension: str | None = None,
 ) -> Path:
     """Resolve derivative path
 
+    Either derivative_name or derivative_folder is required.
+
     Parameters
     ----------
     original : Path
         Original path
-    derivative_name : str
+    derivative_name : str | None,  optional
         Name of derivative
+    derivative_folder : Path | None, optional
+        Derivative folder
     suffix : str | None, optional
         Suffix, by default None
     extension : str | None, optional
@@ -927,12 +932,21 @@ def resolve_derivative(
     Path
         Derivative path corresponding to the input path and options
     """
+
+    if derivative_folder is None and derivative_name is None:
+        raise ValueError("Either `derivative_folder` or `derivative_name` is required.")
+
     dataset_root = resolve_data_root(original)
     local_dataset_root = resolve_data_root(original, resolve_raw_root=False)
 
     relative_path = original.relative_to(local_dataset_root)
 
-    base_path = dataset_root / "derivatives" / derivative_name / relative_path
+    if derivative_folder is None and derivative_name is not None:
+        derivative_folder = dataset_root / "derivatives" / derivative_name
+
+    assert derivative_folder is not None
+
+    base_path = derivative_folder / relative_path
 
     stem, ext = base_path.name.split(".", maxsplit=1)
 
@@ -965,11 +979,54 @@ def resolve_sidecar(path: Path, extension: str = ".json") -> Path:
     return path.parent / f"{stem}{extension}"
 
 
+def get_extension(path: Path) -> str:
+    """
+    Get extension from path
+
+    Note: this function doesn't support file names which includes dot in the name
+    which is not part of the extension.
+
+    Parameters
+    ----------
+    path : Path
+        Input path
+
+    Returns
+    -------
+    str
+        Extension
+    """
+
+    name = path.name
+    for ext in sorted(VALID_EXTENSIONS, key=len, reverse=True):
+        if name.endswith(ext):
+            return ext
+
+    _, ext = name.split(".", maxsplit=1)
+
+    return ext
+
+
+def get_stem(path: Path) -> str:
+    """
+    Get stem of file
+
+    Parameters
+    ----------
+    path : Path
+        Input path
+
+    Returns
+    -------
+        Stem of input path
+    """
+    extension = get_extension(path)
+    stem = path.name.removesuffix(f".{extension}")
+    return stem
+
+
 def add_suffix_to_path_name(path: Path, suffix: str) -> Path:
     """Adds suffix to a path name
-
-    TODO: This method doesn't handle file names which includes dot in the name which is not part
-    of the extensions.
 
     Parameters
     ----------
@@ -983,5 +1040,6 @@ def add_suffix_to_path_name(path: Path, suffix: str) -> Path:
     Path
         Path with suffix
     """
-    stem, ext = path.name.split(".", maxsplit=1)
+    stem = get_stem(path)
+    ext = get_extension(path)
     return path.with_name(f"{stem}_{suffix}.{ext}")
