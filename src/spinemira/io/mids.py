@@ -740,6 +740,57 @@ class Layout:
 
         return None
 
+    def get_main_files_with_sidecars(self, dataframe: pd.DataFrame) -> list[list[Path]]:
+        """
+        Get grouped files by their stem and parent directory, with main files sorted first.
+
+        Parameters
+        ----------
+        dataframe : pd.DataFrame
+            DataFrame containing file information with 'path' column.
+
+        Returns
+        -------
+        list[list[Path]]
+            List of file groups, where each group contains files sharing the same stem and directory,
+            with main files (non-sidecars) sorted first.
+        """
+        if self._df is None:
+            raise RuntimeError("You must call `.index()` first.")
+
+        # Filter out sidecars from input dataframe to get only main files and create stem and parent directory columns
+        main_files_df = dataframe[~dataframe["is_sidecar"]].copy()
+        main_files_df["path_without_suffix"] = main_files_df["path"].apply(
+            lambda p: str(Path(p).with_suffix("").with_suffix(""))
+        )
+
+        # Create stem and parent directory columns
+        df = self._df.copy()
+        df["path_without_suffix"] = df["path"].apply(
+            lambda p: str(Path(p).with_suffix("").with_suffix(""))
+        )
+
+        # Group main files by stem and parent directory
+        grouped_main = main_files_df.groupby(["path_without_suffix"])
+
+        # Create groups of file paths with main files first, then add sidecars from full dataframe
+        file_groups = []
+        for (path_without_suffix,), main_group in grouped_main:
+            # Add main files
+            file_paths = main_group["path"].tolist()
+
+            # Find associated sidecars from the full dataframe copy
+            sidecars = df[
+                (df["is_sidecar"]) & (df["path_without_suffix"] == path_without_suffix)
+            ]["path"].tolist()
+
+            # Add sidecars to the group
+            file_paths.extend(sidecars)
+
+            file_groups.append([Path(path) for path in file_paths])
+
+        return file_groups
+
 
 def extract_entities_from_path(rel_path: Path) -> dict[str, Any]:
     """
