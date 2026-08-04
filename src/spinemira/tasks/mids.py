@@ -2,25 +2,42 @@ import json
 import logging
 from pathlib import Path
 
+from fileformats.core import FileSet
 from fileformats.generic import File, Directory
 from pydra.compose import python
 
 from spinemira.io.mids import (
     Layout,
+    get_stem,
     resolve_derivative as resolve_derivative_path,
+    IMAGE_EXTENSIONS,
 )
 
 logger = logging.getLogger(__name__)
 
 
+def _select_main_path(fileset: FileSet) -> Path:
+    matches = [
+        path for path in fileset.fspaths if path.name.endswith(tuple(IMAGE_EXTENSIONS))
+    ]
+
+    if len(matches) != 1:
+        raise ValueError(
+            "Expected exactly one main entry, "
+            f"found {len(matches)} in {sorted(fileset.fspaths)}"
+        )
+
+    return matches[0]
+
+
 @python.define(outputs=["files"])
 def query_mids(
-    dataset_root: Directory,
+    dataset_root: Path,
     query: str,
     include_derivatives: bool = True,
     load_sidecars: bool = False,
     mids_index: File | None = None,
-) -> list[File]:
+) -> list[FileSet]:
     """
     Query files in a MIDS dataset.
 
@@ -30,7 +47,7 @@ def query_mids(
 
     Parameters
     ----------
-    dataset_root : Directory
+    dataset_root : Path
         Root directory of the MIDS dataset.
     query : str
         Query string to filter files in the dataset.
@@ -45,12 +62,12 @@ def query_mids(
 
     Returns
     -------
-    list[File]
-        List of File objects representing the paths of files that match the query.
+    list[FileSet]
+        List of FileSet objects representing groups of files that share the same stem.
     """
 
     layout = Layout(
-        root=Path(dataset_root),
+        root=dataset_root,
         include_derivatives=include_derivatives,
     )
 
@@ -65,12 +82,21 @@ def query_mids(
     for path in matches["path"].to_list():
         logger.info(f"Query result: {path}")
 
-    return [File(path) for path in matches["path"].to_list()]
+    # Use the utility method to group files by stem and directory
+    file_groups = layout.get_main_files_with_sidecars(matches)
+
+    # Create FileSet objects for each group
+    filesets = []
+    for file_group in file_groups:
+        files = [Path(path) for path in file_group]
+        filesets.append(FileSet(files))
+
+    return filesets
 
 
-@python.define(outputs=["folder"])
+@python.define(outputs=["path"])
 def initialize_derivative(
-    dataset_root: Directory,
+    dataset_root: Path,
     derivative_name: str,
     pipeline_name: str,
     pipeline_version: str,
@@ -80,7 +106,7 @@ def initialize_derivative(
 
     Parameters
     ----------
-    dataset_root : Directory
+    dataset_root : Path
         Directory to dataset root
     derivative_name : str
         Name of derivative
@@ -95,7 +121,7 @@ def initialize_derivative(
         Path to initialized directory
     """
 
-    derivative_root = Path(dataset_root) / "derivatives" / derivative_name
+    derivative_root = dataset_root / "derivatives" / derivative_name
     derivative_root.mkdir(parents=True, exist_ok=True)
 
     description = {
@@ -120,7 +146,7 @@ def initialize_derivative(
 
 @python.define(outputs=["path"])
 def resolve_derivative(
-    file: File,
+    original: FileSet,
     derivative_folder: Directory | None = None,
     derivative_name: str | None = None,
     suffix: str | None = None,
@@ -131,7 +157,7 @@ def resolve_derivative(
 
     Parameters
     ----------
-    file : File
+    file : FileSet
         Original file
     derivative_name : str | None, optional
         Name of derivative
@@ -155,12 +181,33 @@ def resolve_derivative(
         Path(derivative_folder) if derivative_folder is not None else None
     )
 
-    derivative = resolve_derivative_path(
-        original=Path(file),
+    original_path = _select_main_path(original)
+
+    return resolve_derivative_path(
+        original=original_path,
         derivative_name=derivative_name,
         derivative_folder=derivative_folder_path,
         suffix=suffix,
         extension=extension,
     )
 
-    return derivative
+
+@python.define(outputs=["file"])
+def publish_derivative(
+    file: FileSet,
+    destination: Path,
+    overwrite: bool = False,
+) -> FileSet:
+
+    published = file.copy(
+        dest_dir=destination.parent,
+        new_stem=get_stem(destination),
+        mode=FileSet.CopyMode.copy,
+        collation=FileSet.CopyCollation.any,
+        make_dirs=True,
+        overwrite=overwrite,
+    )
+
+    logger.info(f"Published {published}")
+
+    return published

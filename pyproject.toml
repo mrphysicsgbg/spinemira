@@ -23,7 +23,7 @@ dependencies = [
     "tabulate (>=0.9.0,<0.10.0)",
     "cmap (>=0.7.2,<0.8.0)",
     "numpy (>=2.4.4,<3.0.0)",
-    "pydra==1.0a9",
+    "pydra>=1.0a9",
     "fileformats-medimage>=0.11.4",
 ]
 
@@ -51,6 +51,10 @@ registration = [
     "python-stk (>=0.4,<0.5)",
     "pydeform (>=0.5.2,<0.6.0)",
 ]
+
+[project.scripts]
+spinemira-demo = "spinemira.workflows.demo.cli:main"
+spinemira-totalspineseg = "spinemira.workflows.totalspineseg.cli:main"
 
 [[tool.uv.index]]
 name = "gitlab-spinemira"
