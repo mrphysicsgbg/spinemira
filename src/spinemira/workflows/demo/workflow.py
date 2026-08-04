@@ -8,15 +8,13 @@ To highlight effect of parallelization, one of the task includes a sleep.
 from importlib.metadata import version
 import logging
 from pathlib import Path
-from time import sleep, time
+from time import sleep
 import SimpleITK as sitk
 
 from fileformats.medimage import NiftiGz
 from pydra.compose import python, workflow
 
 import spinemira
-from spinemira.core.logging import setup_logging
-from spinemira.pipelines.config import with_cli_config
 from spinemira.tasks.mids import (
     initialize_derivative,
     query_mids,
@@ -54,7 +52,7 @@ def reorient_lps_slow(
 
 
 @workflow.define(outputs=["file"])
-def demo_process_single_entry(
+def demo_process_single_entry_workflow(
     image: NiftiGz, output_path: Path, overwrite: bool = False
 ) -> NiftiGz:
 
@@ -80,7 +78,7 @@ def demo_process_single_entry(
 
 
 @workflow.define(outputs=["files"])
-def demo(
+def demo_workflow(
     dataset_root: Path,
     query: str,
     output_derivative_name: str,
@@ -111,7 +109,7 @@ def demo(
     )
 
     processed = workflow.add(
-        demo_process_single_entry(overwrite=overwrite)
+        demo_process_single_entry_workflow(overwrite=overwrite)
         .split(
             ("image", "output_path"), image=images.files, output_path=output_paths.path
         )
@@ -120,35 +118,3 @@ def demo(
     )
 
     return processed.file
-
-
-@with_cli_config(log_platform_and_packages=False)
-def run_workflow(
-    dataset_root: Path,
-    query: str,
-    output_derivative_name: str,
-    overwrite: bool = False,
-    rerun: bool = False,
-    worker: str = "debug",
-):
-    dataset_root = Path(dataset_root).resolve()
-
-    demo_workflow = demo(
-        dataset_root=dataset_root,
-        query=query,
-        output_derivative_name=output_derivative_name,
-        overwrite=overwrite,
-    )
-
-    start = time()
-
-    demo_workflow(worker=worker, rerun=rerun)
-
-    end = time()
-
-    print(f"Total time: {end - start} s")
-
-
-if __name__ == "__main__":
-    setup_logging(filename="demo.log")
-    run_workflow()
