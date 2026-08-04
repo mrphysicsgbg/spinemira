@@ -52,6 +52,10 @@ registration = [
     "pydeform (>=0.5.2,<0.6.0)",
 ]
 
+[project.scripts]
+spinemira-demo = "spinemira.workflows.demo.cli:main"
+spinemira-totalspineseg = "spinemira.workflows.totalspineseg.cli:main"
+
 [[tool.uv.index]]
 name = "gitlab-spinemira"
 url = "https://git.vgregion.se/api/v4/projects/6781/packages/pypi/simple"
