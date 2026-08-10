@@ -341,7 +341,9 @@ class Layout:
 
         if format == "csv":
             errors = "strict" if not ignore_encoding_errors else "replace"
-            df_to_save.to_csv(path_or_buf=path, index=False, errors=errors)  # type: ignore[call-overload]
+            df_to_save.to_csv(
+                path_or_buf=path, index=False, errors=errors, encoding="utf-8"
+            )  # type: ignore[call-overload]
         elif format == "parquet":
             df_to_save.to_parquet(path, index=False)
         else:
