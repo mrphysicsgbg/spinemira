@@ -7,6 +7,7 @@ from pydra.compose import workflow
 
 import spinemira
 from spinemira.tasks.mids import (
+    index,
     initialize_derivative,
     publish_derivative,
     query_mids,
@@ -98,6 +99,15 @@ def segment_dataset_workflow(
         A tuple containing the label map and levels outputs from the workflow.
     """
 
+    mids_index = workflow.add(
+        index(
+            dataset_root=dataset_root,
+            include_derivative=True,
+            load_sidecars=True,
+        ),
+        name="index_mids",
+    )
+
     initialized_derivative = workflow.add(
         initialize_derivative(
             dataset_root=dataset_root,
@@ -112,6 +122,7 @@ def segment_dataset_workflow(
         query_mids(
             dataset_root=dataset_root,
             query=image_query,
+            mids_index=mids_index.file,
         ),
         name="query_dataset",
     )

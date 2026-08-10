@@ -26,7 +26,7 @@ def run_demo_workflow(
 
     start = time()
 
-    wf(worker=worker, rerun=rerun)
+    wf(worker=worker, rerun=rerun, propagate_rerun=True)
 
     end = time()
 

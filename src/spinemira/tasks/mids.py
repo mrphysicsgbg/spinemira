@@ -30,6 +30,44 @@ def _select_main_path(fileset: FileSet) -> Path:
     return matches[0]
 
 
+@python.define(outputs=["file"])
+def index(
+    dataset_root: Path,
+    include_derivative: bool = False,
+    load_sidecars: bool = False,
+    ignore_encoding_errors: bool = False,
+) -> File:
+    """
+     Parameters
+    ----------
+    dataset_root : Path
+        Root directory of the MIDS dataset.
+    include_derivatives : bool, optional
+        Whether to include derivative datasets in the search, by default True.
+    load_sidecars : bool, optional
+        Whether to load sidecar files (metadata files) when indexing, by default False.
+    ignore_encoding_errors: bool, optional.
+        Whether to ignore encoding errors when saving index, by default False.
+
+    Returns
+    -------
+    File
+        Saved copy of index as CSV-file.
+    """
+
+    layout = Layout(root=dataset_root, include_derivatives=include_derivative)
+
+    logger.info(f"Indexing {dataset_root}")
+
+    layout.index(load_sidecars=load_sidecars)
+
+    index_path = Path.cwd() / "index.csv"
+
+    layout.save_index(path=index_path, ignore_encoding_errors=ignore_encoding_errors)
+
+    return File(index_path)
+
+
 @python.define(outputs=["files"])
 def query_mids(
     dataset_root: Path,

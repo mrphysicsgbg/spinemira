@@ -55,7 +55,7 @@ def run_segment_dataset_workflow(
         totalspineseg_quiet=totalspineseg_quiet,
     )
 
-    wf(worker=worker, rerun=rerun)
+    wf(worker=worker, rerun=rerun, propagate_rerun=True)
 
 
 def main():
