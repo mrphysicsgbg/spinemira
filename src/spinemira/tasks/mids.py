@@ -4,7 +4,9 @@ from pathlib import Path
 
 from fileformats.core import FileSet
 from fileformats.generic import File, Directory
+from pandas import Series
 from pydra.compose import python
+
 
 from spinemira.io.mids import (
     Layout,
@@ -132,6 +134,65 @@ def query_mids(
     return filesets
 
 
+@python.define(outputs=["file"])
+def find_indexed_derivative(
+    dataset_root: Path,
+    file: FileSet,
+    flt: str | dict[str, str] | None = None,
+    load_sidecars: bool = False,
+    mids_index: File | None = None,
+) -> File:
+    """
+    Find indexed derivative for file.
+
+    Parameters
+    ----------
+    dataset_root : Path,
+        Directory to dataset root
+    file : FileSet
+        Input file to find derivative for.
+    flt : str | dict[str, str] | None, optional
+        Filter query, either as a string which can be passed to Pandas Query, or as a dictionary
+        containing key value pairs to filter on.
+    load_sidecars : bool, optional
+        Whether to load sidecar files (metadata files) when indexing, by default False.
+    mids_index : File | None, optional
+        MIDS index. If unspecified, the layout will be indexed automatically.
+
+    Return
+    ------
+    File for resolved derivative.
+
+    See Also
+    --------
+    spinemira.core.layout.Layout.find_derivative : Core implementation
+
+    """
+
+    layout = Layout(
+        root=dataset_root,
+        include_derivatives=True,
+    )
+
+    if mids_index is not None and mids_index.exists():
+        logger.info(f"Loading MIDS index at {str(mids_index)}")
+        layout.load_index(Path(mids_index))
+    else:
+        logger.info(f"Indexing dataset at {str(dataset_root)}")
+        layout.index(load_sidecars=load_sidecars)
+
+    file_path = _select_main_path(file)
+
+    entry = layout.find_derivative(input_data=file_path, flt=flt)
+
+    assert isinstance(entry, Series)
+    assert isinstance(entry.path, (str, Path))
+
+    logger.info(f"Found derivative: {file_path} -> {entry.path}")
+
+    return File(entry.path)
+
+
 @python.define(outputs=["path"])
 def initialize_derivative(
     dataset_root: Path,
@@ -195,7 +256,7 @@ def resolve_derivative(
 
     Parameters
     ----------
-    file : FileSet
+    original : FileSet
         Original file
     derivative_name : str | None, optional
         Name of derivative
