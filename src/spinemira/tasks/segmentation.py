@@ -147,8 +147,12 @@ def run_totalspineseg(
                 f"TotalSpineSeg did not generate the expected levels map: {str(generated_levels_map)}"
             )
 
-        label_map = generated_label_map.move(dest_dir=Path.cwd(), overwrite=True)
-        levels = generated_levels_map.move(dest_dir=Path.cwd(), overwrite=True)
+        label_map = generated_label_map.move(
+            dest_dir=Path.cwd(), stem_suffix="dseg", overwrite=True
+        )
+        levels = generated_levels_map.move(
+            dest_dir=Path.cwd(), stem_suffix="levels", overwrite=True
+        )
 
         logger.info(f"File: {str(label_map)} created")
         logger.info(f"File: {str(levels)} created")
