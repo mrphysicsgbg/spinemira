@@ -1,0 +1,10 @@
+dataset_root: 'examples/spider_dataset/'
+image_query: '`source` == "raw"'
+label_map_query: '`pipeline` == "totalspineseg" and `additional_suffixes` == "dseg"'
+output_derivative_name: 'histogram_normalized'
+segmentation_label_intervals:
+  spinal_canal: (2, 2)
+  vertebrae: (11, 45)
+  discs: (63, 100)
+num_bins: 512
+background_rel_weight: 0.1
