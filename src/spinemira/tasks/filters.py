@@ -7,7 +7,7 @@ from spinemira.core import filters
 from spinemira.core.io import load_image, load_label_map
 
 
-@python.define()
+@python.define(outputs=["file"])
 def histogram_matching(
     src_image: NiftiGz,
     ref_image: NiftiGz,
@@ -57,7 +57,7 @@ def histogram_matching(
     return NiftiGz(output_path)
 
 
-@python.define()
+@python.define(outputs=["file"])
 def multiple_regions_histogram_matching(
     src_image: NiftiGz,
     src_label_map: NiftiGz,
@@ -137,7 +137,7 @@ def multiple_regions_histogram_matching(
     return NiftiGz(output_path)
 
 
-@python.define()
+@python.define(outputs=["file"])
 def winsorize(
     image: NiftiGz, lower: float, upper: float, mask: NiftiGz | None = None
 ) -> NiftiGz:
@@ -182,7 +182,7 @@ def winsorize(
     return NiftiGz(output_path)
 
 
-@python.define()
+@python.define(outputs=["file"])
 def filter_mask(mask: NiftiGz, labels: set[float]) -> NiftiGz:
     """
     Filter a mask by retaining only the specified labels.
@@ -217,9 +217,11 @@ def filter_mask(mask: NiftiGz, labels: set[float]) -> NiftiGz:
     return NiftiGz(output_path)
 
 
-@python.define()
+@python.define(outputs=["file"])
 def reduce_label_map(
-    label_map: NiftiGz, intervals: list[tuple[int, int]], new_labels: list[int]
+    label_map: NiftiGz,
+    intervals: list[tuple[int, int]],
+    new_labels: list[int] | None = None,
 ) -> NiftiGz:
     """
     Reduce label map by mapping intervals to new labels.
@@ -233,7 +235,7 @@ def reduce_label_map(
         Input label map file (NIfTI format, gzipped)
     intervals : list[tuple[int, int]]
         List of intervals (min_val, max_val) to map
-    new_labels : list[int]
+    new_labels : list[int] | None, optional
         List of new labels corresponding to each interval
 
     Returns
@@ -258,7 +260,7 @@ def reduce_label_map(
     return NiftiGz(output_path)
 
 
-@python.define()
+@python.define(outputs=["file"])
 def normalize_to_label_intensity_mode(
     image: NiftiGz,
     label_map: NiftiGz,

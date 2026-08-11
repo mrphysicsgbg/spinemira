@@ -49,7 +49,7 @@ def scale_normalize_single_image_workflow(
 
     published_image = workflow.add(
         publish_derivative(
-            file=normalized.out, destination=output_image, overwrite=True
+            file=normalized.file, destination=output_image, overwrite=True
         ),
         name="publish_filtered_image",
     )
