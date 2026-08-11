@@ -279,10 +279,38 @@ def filter_mask(mask: sitk.Image, labels: set[float]) -> sitk.Image:
 
 
 def reduce_label_map(
-    label_map: sitk.Image, intervals: list[tuple[int, int]], new_labels: list[int]
+    label_map: sitk.Image,
+    intervals: list[tuple[int, int]],
+    new_labels: list[int] | None = None,
 ) -> sitk.Image:
+    """Reduce the number of labels in a label map by mapping intervals of labels to new labels.
+
+    This function takes a label map and reduces the number of unique labels by mapping specified
+    intervals of label values to new label values. If `new_labels` is not provided, the function
+    will automatically assign new labels starting from 1.
+
+    Parameters
+    ----------
+    label_map : sitk.Image
+        Input label map to be reduced.
+    intervals : list[tuple[int, int]]
+        List of tuples specifying the intervals of label values to be mapped. Each tuple
+        contains the minimum and maximum label values (inclusive) for the interval.
+    new_labels : list[int] | None, optional
+        List of new label values to assign to the intervals. If not provided, new labels
+        will be assigned starting from 1. The length of `new_labels` must match the length
+        of `intervals`.
+
+    Returns
+    -------
+    sitk.Image
+        Reduced label map with the specified intervals mapped to new labels.
+    """
     label_map_reduced = sitk.Image(label_map.GetSize(), sitk.sitkUInt8)
     label_map_reduced.CopyInformation(label_map)
+
+    if new_labels is None:
+        new_labels = list(range(1, len(intervals) + 1))
 
     for (min_val, max_val), new_label in zip(intervals, new_labels):
         mask = sitk.And(
