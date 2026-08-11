@@ -306,3 +306,50 @@ def normalize_to_label_intensity_mode(
     sitk.WriteImage(filtered_sitk, output_path)
 
     return NiftiGz(output_path)
+
+
+@python.define(outputs=["file"])
+def rescale(
+    image: NiftiGz, lower: float | None = None, upper: float | None = None
+) -> NiftiGz:
+    """
+    Rescale the intensity values of an image to a specified range.
+
+    This function is a Pydra task wrapper for the core function `rescale`
+    from `spinemira.core.filters`. It rescales the intensity values of the input image to fit within the specified
+    range defined by `lower` and `upper`. If both `lower` and `upper` are `None`, the original
+    image is returned unchanged. If only one of `lower` or `upper` is provided, the other is
+    calculated to maintain the original dynamic range of the image.
+
+    Parameters
+    ----------
+    image : NiftiGz
+        Input image file (NIfTI format, gzipped) whose intensity values are to be rescaled.
+    lower : float | None, optional
+        Lower bound of the output intensity range. If None, the minimum intensity value
+        of the input image is used. If both `lower` and `upper` are None, the original
+        image is returned unchanged.
+    upper : float | None, optional
+        Upper bound of the output intensity range. If None, the maximum intensity value
+        of the input image is used. If both `lower` and `upper` are None, the original
+        image is returned unchanged.
+
+    Returns
+    -------
+    NiftiGz
+        Image file with intensity values rescaled to the specified range (NIfTI format, gzipped).
+        If both `lower` and `upper` are None, the original image is returned.
+
+    See Also
+    --------
+    spinemira.core.filters.rescale : Core implementation
+    """
+
+    image_sitk = load_image(image.fspath, pixel_type=sitk.sitkUnknown)
+
+    filtered_sitk = filters.rescale(image=image_sitk, lower=lower, upper=upper)
+
+    output_path = Path.cwd() / "filtered.nii.gz"
+    sitk.WriteImage(filtered_sitk, output_path)
+
+    return NiftiGz(output_path)

@@ -377,3 +377,50 @@ def normalize_to_label_intensity_mode(
     normalized_image = image / float(mode)
 
     return normalized_image
+
+
+def rescale(image: sitk.Image, lower: float | None, upper: float | None) -> sitk.Image:
+    """Rescale the intensity values of an image to a specified range.
+
+    This function rescales the intensity values of the input image to fit within the specified
+    range defined by `lower` and `upper`. If both `lower` and `upper` are `None`, the original
+    image is returned unchanged. If only one of `lower` or `upper` is provided, the other is
+    calculated to maintain the original dynamic range of the image.
+
+    Parameters
+    ----------
+    image : sitk.Image
+        Input image whose intensity values are to be rescaled.
+    lower : float | None
+        Lower bound of the output intensity range. If None, the minimum intensity value
+        of the input image is used. If both `lower` and `upper` are None, the original
+        image is returned unchanged.
+    upper : float | None
+        Upper bound of the output intensity range. If None, the maximum intensity value
+        of the input image is used. If both `lower` and `upper` are None, the original
+        image is returned unchanged.
+
+    Returns
+    -------
+    sitk.Image
+        Image with intensity values rescaled to the specified range. If both `lower` and `upper`
+        are None, the original image is returned.
+    """
+
+    minimum, maximum = sitk.MinimumMaximum(image)
+    range = maximum - minimum
+
+    if lower is None and upper is None:
+        return image
+    elif lower is None:
+        assert upper is not None
+        lower = upper - range
+    elif upper is None:
+        assert lower is not None
+        upper = lower + range
+
+    filter = sitk.RescaleIntensityImageFilter()
+    filter.SetOutputMinimum(lower)
+    filter.SetOutputMaximum(upper)
+
+    return filter.Execute(image)
