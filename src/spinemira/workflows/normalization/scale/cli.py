@@ -14,6 +14,7 @@ def run_scale_normalize_dataset_workflow(
     output_derivative_name: str,
     label: int = TotalSpineSegLabels.SPINAL_CANAL.value,
     overwrite: bool = False,
+    rescale_to_positive: bool = False,
     rerun: bool = False,
     worker: str = "debug",
 ):
@@ -31,7 +32,12 @@ def run_scale_normalize_dataset_workflow(
     output_derivative_name : str
         Name of the output derivative folder.
     label : int, optional
-        Label in
+        Label in segmentation to use for scaling
+    overwrite : bool, optional
+        Whether to overwrite already existing images. Default false.
+    rescale_to_positive : bool, optional
+        Whether to rescale images to positive prior to normalization. Should only be used if images are
+        known to include negative values. Default false.
     rerun : bool, optional
         Whether to rerun the workflow even if outputs exist, by default False.
     worker : str, optional
@@ -47,6 +53,7 @@ def run_scale_normalize_dataset_workflow(
         output_derivative_name=output_derivative_name,
         label=label,
         overwrite=overwrite,
+        rescale_to_positive=rescale_to_positive,
     )
 
     wf(worker=worker, rerun=rerun, propagate_rerun=True)

@@ -7,7 +7,7 @@ from pydra.compose import workflow
 
 import spinemira
 from spinemira.core.segmentation.labels import TotalSpineSegLabels
-from spinemira.tasks.filters import normalize_to_label_intensity_mode
+from spinemira.tasks.filters import normalize_to_label_intensity_mode, rescale
 from spinemira.tasks.mids import (
     find_indexed_derivative,
     index,
@@ -29,6 +29,7 @@ def scale_normalize_single_image_workflow(
     output_image: Path,
     nbins: int,
     overwrite: bool,
+    rescale_to_positive: bool,
 ) -> NiftiGz:
 
     if output_image.exists() and not overwrite:
@@ -37,9 +38,11 @@ def scale_normalize_single_image_workflow(
 
     logger.info(f"Processing: {image}")
 
+    rescaled = workflow.add(rescale(image=image, lower=0), name="rescale_to_positive")
+
     normalized = workflow.add(
         normalize_to_label_intensity_mode(
-            image=image,
+            image=rescaled.file if rescale_to_positive else image,
             label_map=label_map,
             label=label,
             nbins=nbins,
@@ -66,6 +69,7 @@ def scale_normalize_dataset_workflow(
     overwrite: bool = False,
     label: int = TotalSpineSegLabels.SPINAL_CANAL,
     nbins: int = 1024,
+    rescale_to_positive: bool = False,
 ) -> list[NiftiGz]:
     """
     Create a workflow for scale normalize a dataset.
@@ -80,6 +84,8 @@ def scale_normalize_dataset_workflow(
         Name of the output derivative folder.
     overwrite : bool, optional
         Whether to overwrite existing output files, by default False.
+    rescale_to_positive : bool, optional
+        Whether to rescale images to positive prior to scaling, by default False.
 
     Return
     ------
@@ -135,7 +141,10 @@ def scale_normalize_dataset_workflow(
 
     normalized = workflow.add(
         scale_normalize_single_image_workflow(
-            label=label, overwrite=overwrite, nbins=nbins
+            label=label,
+            overwrite=overwrite,
+            nbins=nbins,
+            rescale_to_positive=rescale_to_positive,
         )
         .split(
             ("image", "label_map", "output_image"),
