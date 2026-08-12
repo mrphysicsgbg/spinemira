@@ -1,0 +1,4 @@
+dataset_root: 'examples/spider_dataset/'
+image_query: '`source` == "raw"'
+label_map_query: '`pipeline` == "totalspineseg" and `additional_suffixes` == "dseg"'
+output_derivative_name: 'scale_normalized'

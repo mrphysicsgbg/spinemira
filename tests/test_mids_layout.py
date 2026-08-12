@@ -1,7 +1,7 @@
 from pathlib import Path
 from unittest import TestCase
 
-from spinemira.io.mids import Layout
+from spinemira.io.mids import Layout, get_extension
 
 
 class TestMidsLayout(TestCase):
@@ -31,3 +31,10 @@ class TestMidsLayout(TestCase):
         )
         df_raw = self.layout.find_raw(df_derivative)
         self.assertEqual(len(df_derivative), len(df_raw))
+
+    def test_get_extension(self):
+        """Test extract suffix from path."""
+
+        self.assertEqual(get_extension(Path("./test.nii.gz")), ".nii.gz")
+        self.assertEqual(get_extension(Path("./test.nii")), ".nii")
+        self.assertEqual(get_extension(Path("./test.png")), ".png")

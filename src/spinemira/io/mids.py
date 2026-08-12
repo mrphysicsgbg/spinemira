@@ -341,7 +341,9 @@ class Layout:
 
         if format == "csv":
             errors = "strict" if not ignore_encoding_errors else "replace"
-            df_to_save.to_csv(path_or_buf=path, index=False, errors=errors)  # type: ignore[call-overload]
+            df_to_save.to_csv(
+                path_or_buf=path, index=False, errors=errors, encoding="utf-8"
+            )  # type: ignore[call-overload]
         elif format == "parquet":
             df_to_save.to_parquet(path, index=False)
         else:
@@ -1055,7 +1057,7 @@ def get_extension(path: Path) -> str:
 
     _, ext = name.split(".", maxsplit=1)
 
-    return ext
+    return f".{ext}"
 
 
 def get_stem(path: Path) -> str:
@@ -1072,7 +1074,7 @@ def get_stem(path: Path) -> str:
         Stem of input path
     """
     extension = get_extension(path)
-    stem = path.name.removesuffix(f".{extension}")
+    stem = path.name.removesuffix(f"{extension}")
     return stem
 
 
@@ -1093,4 +1095,4 @@ def add_suffix_to_path_name(path: Path, suffix: str) -> Path:
     """
     stem = get_stem(path)
     ext = get_extension(path)
-    return path.with_name(f"{stem}_{suffix}.{ext}")
+    return path.with_name(f"{stem}_{suffix}{ext}")
