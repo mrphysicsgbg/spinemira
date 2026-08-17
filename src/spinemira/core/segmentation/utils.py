@@ -142,32 +142,6 @@ def get_roi_mask(
     return sitk.Cast(roi_mask, sitk.sitkFloat32)
 
 
-def filter_label_map(label_map: sitk.Image, labels: set[int]) -> sitk.Image:
-    """
-    Filter a mask by retaining only the specified labels.
-
-    Parameters
-    ----------
-    mask : sitk.Image
-        Input label map.
-    labels : set[int]
-        Labels to retain.
-
-    Returns
-    -------
-    sitk.Image
-        Filtered mask containing only the specified labels.
-    """
-    filtered = sitk.Image(label_map.GetSize(), label_map.GetPixelID())
-    filtered.CopyInformation(label_map)
-
-    for label in labels:
-        binary = sitk.BinaryThreshold(label_map, label, label, label, 0)
-        filtered = sitk.Add(filtered, binary)
-
-    return filtered
-
-
 def split_label_along_principal_axis(
     label_map: sitk.Image,
     n_parts: int,

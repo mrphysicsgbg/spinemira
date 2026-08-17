@@ -252,13 +252,13 @@ def winsorize(
     return image_filtered
 
 
-def filter_mask(mask: sitk.Image, labels: set[float]) -> sitk.Image:
+def filter_label_map(label_map: sitk.Image, labels: set[int]) -> sitk.Image:
     """
-    Filter a mask by retaining only the specified labels.
+    Filter a label map by retaining only the specified labels.
 
     Parameters
     ----------
-    mask : sitk.Image
+    label_map : sitk.Image
         Input label map.
     labels : set[float]
         Labels to retain.
@@ -266,13 +266,13 @@ def filter_mask(mask: sitk.Image, labels: set[float]) -> sitk.Image:
     Returns
     -------
     sitk.Image
-        Filtered mask containing only the specified labels.
+        Filtered label map containing only the specified labels.
     """
-    filtered = sitk.Image(mask.GetSize(), mask.GetPixelID())
-    filtered.CopyInformation(mask)
+    filtered = sitk.Image(label_map.GetSize(), label_map.GetPixelID())
+    filtered.CopyInformation(label_map)
 
     for label in labels:
-        binary = sitk.BinaryThreshold(mask, label, label, label, 0)
+        binary = sitk.BinaryThreshold(label_map, label, label, label, 0)
         filtered = sitk.Add(filtered, binary)
 
     return filtered
