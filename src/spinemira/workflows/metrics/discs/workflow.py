@@ -8,7 +8,7 @@ from pydra.compose import workflow
 
 import spinemira
 from spinemira.core.directions import LPS
-from spinemira.tasks.discs import calc_disc_signal_intensity_profile
+from spinemira.tasks.discs import calc_disc_signal_intensity_profile, calc_disc_delta_mu
 from spinemira.tasks.mids import (
     index,
     initialize_derivative,
@@ -17,6 +17,7 @@ from spinemira.tasks.mids import (
     find_indexed_derivative,
     resolve_derivative,
 )
+from spinemira.tasks.utils import make_merge_json_files_task
 
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,8 @@ def calc_disc_metrics_single_image_workflow(
     label_map: NiftiGz,
     disc_labels: dict[str, int],
     output_json: Path,
+    calc_signal_profile: bool = True,
+    calc_delta_mu: bool = True,
     n_parts: int = 5,
     split_direction: tuple[float, float, float] = LPS.ANTERIOR_TO_POSTERIOR.value,
     split_plane_normal: tuple[float, float, float] = LPS.LEFT_TO_RIGHT.value,
@@ -39,6 +42,7 @@ def calc_disc_metrics_single_image_workflow(
 
     This workflow computes signal intensity statistics (mean, median, IQR, min, max) for each disc
     in the provided label map. Each disc is split into `n_parts` sub-regions along a specified direction.
+    The delta mu metric is based on the methodology described in [1]_.
 
     Parameters
     ----------
@@ -50,6 +54,10 @@ def calc_disc_metrics_single_image_workflow(
         Dictionary mapping disc names (e.g., "L1_L2") to their corresponding integer labels in the label map.
     output_json : Path
         Output path for the JSON file containing the computed statistics.
+    calc_signal_profile : bool, by default True.
+        Wether to calculate disc signal profile.
+    calc_delta_mu : bool, by default True.
+        Wether to calculate delta mu.
     n_parts : int, optional
         Number of sub-regions to split each disc into, by default 5.
     split_direction : tuple[float, float, float], optional
@@ -68,6 +76,13 @@ def calc_disc_metrics_single_image_workflow(
     -------
     Json
         Path to the JSON file containing the computed disc signal intensity statistics.
+
+    References
+    ----------
+    .. [1] Waldenberg, Christian & Hebelka, Hanna & Brisby, Helena & Lagerstrand, Kerstin.
+        (2018). MRI histogram analysis enables objective and continuous classification of
+        intervertebral disc degeneration. European Spine Journal. 27.
+        10.1007/s00586-017-5264-7.
     """
 
     if output_json.exists() and not overwrite:
@@ -76,22 +91,43 @@ def calc_disc_metrics_single_image_workflow(
 
     logger.info(f"Processing: {image}")
 
-    calculated_disc_signal_intensity_profile = workflow.add(
-        calc_disc_signal_intensity_profile(
-            image=image,
-            label_map=label_map,
-            disc_labels=disc_labels,
-            n_parts=n_parts,
-            split_direction=split_direction,
-            split_plane_normal=split_plane_normal,
-            max_plane_distance=max_plane_distance,
-        ),
-        name="calc_disc_signal_intensity_profile",
+    json_outputs_to_merge = {}
+
+    if calc_signal_profile:
+        calculated_disc_signal_intensity_profile = workflow.add(
+            calc_disc_signal_intensity_profile(
+                image=image,
+                label_map=label_map,
+                disc_labels=disc_labels,
+                n_parts=n_parts,
+                split_direction=split_direction,
+                split_plane_normal=split_plane_normal,
+                max_plane_distance=max_plane_distance,
+            ),
+            name="calc_disc_signal_intensity_profile",
+        )
+        json_outputs_to_merge["calc_disc_signal_profile"] = (
+            calculated_disc_signal_intensity_profile.json
+        )
+
+    if calc_delta_mu:
+        calculated_disc_delta_mu = workflow.add(
+            calc_disc_delta_mu(
+                image=image, label_map=label_map, disc_labels=disc_labels
+            ),
+            name="calc_disc_delta_mu",
+        )
+        json_outputs_to_merge["delta_mu"] = calculated_disc_delta_mu.json
+
+    merge_json_files_task = make_merge_json_files_task(*json_outputs_to_merge.keys())
+
+    merged_json_files = workflow.add(
+        merge_json_files_task(**json_outputs_to_merge), name="merge_json_files"
     )
 
     published = workflow.add(
         publish_derivative(
-            file=calculated_disc_signal_intensity_profile.json,
+            file=merged_json_files.json,
             destination=output_json,
             overwrite=True,
         ),
@@ -109,6 +145,8 @@ def calc_disc_metrics_dataset_workflow(
     output_derivative_name: str,
     disc_labels: dict[str, int],
     load_sidecars: bool = False,
+    calc_signal_profile: bool = True,
+    calc_delta_mu: bool = True,
     n_parts: int = 5,
     split_direction: tuple[float, float, float] = LPS.ANTERIOR_TO_POSTERIOR.value,
     split_plane_normal: tuple[float, float, float] = LPS.LEFT_TO_RIGHT.value,
@@ -120,7 +158,8 @@ def calc_disc_metrics_dataset_workflow(
 
     This workflow processes all images matching the provided `image_query` in the dataset,
     computes signal intensity statistics for each disc in the corresponding label maps, and
-    saves the results as JSON files in a BIDS derivative folder.
+    saves the results as JSON files in a MIDS derivative folder.
+    The delta mu metric is based on the methodology described in [1]_.
 
     Parameters
     ----------
@@ -136,6 +175,10 @@ def calc_disc_metrics_dataset_workflow(
         Dictionary mapping disc names (e.g., "L1_L2") to their corresponding integer labels in the label map.
     load_sidecars : bool, optional
         Whether to load sidecar files when indexing the dataset, by default False.
+    calc_signal_profile : bool, by default True.
+        Wether to calculate disc signal profile.
+    calc_delta_mu : bool, by default True.
+        Wether to calculate delta mu.
     n_parts : int, optional
         Number of sub-regions to split each disc into, by default 5.
     split_direction : tuple[float, float, float], optional
@@ -154,6 +197,13 @@ def calc_disc_metrics_dataset_workflow(
     -------
     list[Json]
         List of paths to the JSON files containing the computed disc signal intensity statistics for each image.
+
+    References
+    ----------
+    .. [1] Waldenberg, Christian & Hebelka, Hanna & Brisby, Helena & Lagerstrand, Kerstin.
+        (2018). MRI histogram analysis enables objective and continuous classification of
+        intervertebral disc degeneration. European Spine Journal. 27.
+        10.1007/s00586-017-5264-7.
     """
 
     mids_index = workflow.add(
@@ -206,6 +256,8 @@ def calc_disc_metrics_dataset_workflow(
         calc_disc_metrics_single_image_workflow(
             overwrite=overwrite,
             disc_labels=disc_labels,
+            calc_signal_profile=calc_signal_profile,
+            calc_delta_mu=calc_delta_mu,
             n_parts=n_parts,
             split_direction=split_direction,
             split_plane_normal=split_plane_normal,

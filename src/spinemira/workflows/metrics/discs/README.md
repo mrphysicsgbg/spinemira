@@ -13,7 +13,8 @@ uv run python -m spinemira.workflows.metrics.discs --config ./src/spinemira/work
 ## Features
 
 - [x] **Disc Signal Profile Analysis**: Computes signal intensity statistics (mean, median, IQR, min, max) for discs split into sub-regions along a specified direction (e.g., anterior to posterior).
-- [ ] Pfirrman analysis based on histogram peaks (Not yet implemented)
+- [x] **Pfirrman analysis based on histogram peaks**:
+  Partially implemented. "Delta-mu" is calculated."
 
 ## Requirements
 
