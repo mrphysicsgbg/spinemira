@@ -3,11 +3,79 @@ from pathlib import Path
 import subprocess
 import tempfile
 
+import SimpleITK as sitk
 from fileformats.medimage import NiftiGz
 from pydra.compose import python
 
+from spinemira.core.segmentation import utils as segmentationUtils
+
 
 logger = logging.getLogger(__name__)
+
+
+@python.define(outputs=["file"])
+def split_label_along_principal_axis(
+    label_map: NiftiGz,
+    n_parts: int,
+    target_direction: tuple[int, int, int],
+    plane_normal: tuple[int, int, int],
+) -> NiftiGz:
+    """
+    Split the non-zero region of a 3D label map into n equal-length parts along the principal inertia axis closest to target_direction.
+
+    This function is a Pydra task wrapper for the core function `split_label_along_principal_axis`
+    from `spinemira.core.segmentation.utils`. It splits a label map into multiple parts along the principal
+    inertia axis that best aligns with the target direction.
+
+    Parameters
+    ----------
+    label_map : NiftiGz
+        Input label map file (NIfTI format, gzipped). All non-zero voxels are treated as one region.
+    n_parts : int
+        Number of sections to split the label map into.
+    target_direction : tuple[int, int, int]
+        Direction in physical SimpleITK coordinates, i.e. (x, y, z).
+
+        For a standard LPS-oriented SimpleITK image:
+            Left -> Right      = [-1,  0,  0]
+            Right -> Left      = [ 1,  0,  0]
+            Posterior -> Anterior = [0, -1,  0]
+            Anterior -> Posterior = [0,  1,  0]
+            Inferior -> Superior = [0,  0,  1]
+            Superior -> Inferior = [0,  0, -1]
+    plane_normal : tuple[int, int, int]
+        Vector (3,) defining the normal of a plane in physical SimpleITK coordinates, i.e. (x, y, z).
+        If specified, then the principal axis to perform the split along will be calculated in the plane.
+
+    Returns
+    -------
+    NiftiGz
+        Label map file with the divided segmentation (NIfTI format, gzipped).
+        Integer image with:
+            0 = background
+            1 ... n_parts = sections
+
+    See Also
+    --------
+    spinemira.core.segmentation.utils.split_label_along_principal_axis : Core implementation
+    """
+
+    # Load label map
+    label_map_sitk = sitk.ReadImage(label_map.fspath)
+
+    # Split label map
+    splitted_sitk, _ = segmentationUtils.split_label_along_principal_axis(
+        label_map=label_map_sitk,
+        n_parts=n_parts,
+        target_direction=target_direction,
+        plane_normal=plane_normal,
+    )
+
+    # Save result
+    output_path = Path.cwd() / "label_map_splitted.nii.gz"
+    sitk.WriteImage(splitted_sitk, output_path)
+
+    return NiftiGz(output_path)
 
 
 @python.define(outputs=["label_map", "levels"])

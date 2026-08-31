@@ -183,35 +183,35 @@ def winsorize(
 
 
 @python.define(outputs=["file"])
-def filter_mask(mask: NiftiGz, labels: set[float]) -> NiftiGz:
+def filter_label_map(label_map: NiftiGz, labels: set[int]) -> NiftiGz:
     """
-    Filter a mask by retaining only the specified labels.
+    Filter a label map by retaining only the specified labels.
 
-    This function is a Pydra task wrapper for the core function `filter_mask`
-    from `spinemira.core.filters`. It filters a mask by retaining only the specified labels.
+    This function is a Pydra task wrapper for the core function `filter_label_map`
+    from `spinemira.core.filters`. It filters a label map by retaining only the specified labels.
 
     Parameters
     ----------
-    mask : NiftiGz
+    filter_label_map : NiftiGz
         Input label map file (NIfTI format, gzipped)
-    labels : set[float]
+    labels : set[int]
         Labels to retain
 
     Returns
     -------
     NiftiGz
-        Filtered mask containing only the specified labels (NIfTI format, gzipped)
+        Filtered label map containing only the specified labels (NIfTI format, gzipped)
 
     See Also
     --------
-    spinemira.core.filters.filter_mask : Core implementation
+    spinemira.core.filters.filter_label_map : Core implementation
     """
 
-    mask_sitk = load_label_map(mask.fspath)
+    label_map_sitk = load_label_map(label_map.fspath)
 
-    filtered_sitk = filters.filter_mask(mask=mask_sitk, labels=labels)
+    filtered_sitk = filters.filter_label_map(label_map=label_map_sitk, labels=labels)
 
-    output_path = Path.cwd() / "filtered_mask.nii.gz"
+    output_path = Path.cwd() / "filtered_label_map.nii.gz"
     sitk.WriteImage(filtered_sitk, output_path)
 
     return NiftiGz(output_path)

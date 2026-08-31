@@ -1,0 +1,4 @@
+dataset_root: 'examples/spider_dataset/'
+image_query: '`pipeline` == "histogram_normalized"'
+label_map_query: '`pipeline` == "totalspineseg" and `additional_suffixes` == "dseg"'
+output_derivative_name: 'disc_metrics'

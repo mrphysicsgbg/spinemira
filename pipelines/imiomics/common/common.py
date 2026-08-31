@@ -6,11 +6,10 @@ import numpy as np
 
 import pydeform.sitk_api as pydeform
 
-from spinemira.core.filters import normalize_to_label_intensity_mode
+from spinemira.core.filters import normalize_to_label_intensity_mode, filter_label_map
 from spinemira.core.io import load_image, load_label_map
 from spinemira.core.morphology.straightening import straighten_coord
 from spinemira.core.segmentation.utils import (
-    filter_label_map,
     get_common_labels,
     get_level_coordinates,
     get_roi_mask,
