@@ -2,9 +2,11 @@ import json
 import logging
 from pathlib import Path
 
-from fileformats.core import FileSet
+from fileformats.core import FileSet, converter
+from fileformats.core.exceptions import FormatMismatchError
 from fileformats.generic import File, Directory
-from pandas import Series
+from fileformats.medimage import NiftiGz
+import pandas as pd
 from pydra.compose import python
 
 
@@ -19,6 +21,11 @@ logger = logging.getLogger(__name__)
 
 
 def _select_main_path(fileset: FileSet) -> Path:
+
+    # If only one path is present, return that
+    if len(fileset.fspaths) == 1:
+        return list(fileset.fspaths)[0]
+
     matches = [
         path for path in fileset.fspaths if path.name.endswith(tuple(IMAGE_EXTENSIONS))
     ]
@@ -30,6 +37,21 @@ def _select_main_path(fileset: FileSet) -> Path:
         )
 
     return matches[0]
+
+
+@converter
+@python.define(outputs=["out_file"])
+def fileset_to_nifti_gz(in_file: FileSet) -> NiftiGz:
+
+    matches = [path for path in in_file.fspaths if NiftiGz.matches(path)]
+
+    if len(matches) != 1:
+        raise FormatMismatchError(
+            f"Expected exactly one NiftiGz in {in_file}, "
+            f"found {len(matches)}: {matches}"
+        )
+
+    return NiftiGz(matches[0])
 
 
 @python.define(outputs=["file"])
@@ -141,7 +163,7 @@ def find_indexed_derivative(
     flt: str | dict[str, str] | None = None,
     load_sidecars: bool = False,
     mids_index: File | None = None,
-) -> File:
+) -> FileSet:
     """
     Find indexed derivative for file.
 
@@ -161,7 +183,8 @@ def find_indexed_derivative(
 
     Return
     ------
-    File for resolved derivative.
+    FileSet for resolved derivative. Grouped together with any sidecars found by checking for files sharing the same
+    stem.
 
     See Also
     --------
@@ -182,15 +205,17 @@ def find_indexed_derivative(
         layout.index(load_sidecars=load_sidecars)
 
     file_path = _select_main_path(file)
+    entry = layout.find_derivative(
+        input_data=file_path, flt=flt, return_type="dataframe"
+    )
+    assert isinstance(entry, pd.DataFrame)
 
-    entry = layout.find_derivative(input_data=file_path, flt=flt)
+    file_groups = layout.get_main_files_with_sidecars(entry)
+    file_set = file_groups[0]
 
-    assert isinstance(entry, Series)
-    assert isinstance(entry.path, (str, Path))
+    logger.info(f"Found derivative: {file_path} -> {file_set[0]}")
 
-    logger.info(f"Found derivative: {file_path} -> {entry.path}")
-
-    return File(entry.path)
+    return FileSet(file_set)
 
 
 @python.define(outputs=["path"])
