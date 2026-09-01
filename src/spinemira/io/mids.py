@@ -53,7 +53,7 @@ class Layout:
         include_derivatives : bool, optional
             Whether to index derivatives (default is True).
         """
-        self._root = Path(root)
+        self._root = Path(root).resolve()
         self._include_derivatives = include_derivatives
         self._df: None | pd.DataFrame = None
 
@@ -137,45 +137,47 @@ class Layout:
             List of dictionaries with extracted metadata for each valid file.
         """
         records = []
-        for file in base_dir.rglob("*"):
-            if not file.is_file():
-                continue
-            if source == "raw" and "derivatives" in file.parts:
-                continue
-            if not is_valid_bids_file(file.name):
-                continue
 
-            rel_path = file.relative_to(base_dir)
-            entities = extract_entities_from_path(rel_path)
-            entities["path"] = str(file.resolve())
-            entities["rel_path"] = str(file.relative_to(self._root))
-            entities["source"] = source
-            entities["pipeline"] = pipeline
-            entities["is_sidecar"] = is_sidecar_file(file.name)
+        for subdir in base_dir.glob("sub-*"):
+            for file in subdir.rglob("*"):
+                if not file.is_file():
+                    continue
+                if source == "raw" and "derivatives" in file.parts:
+                    continue
+                if not is_valid_bids_file(file.name):
+                    continue
 
-            # Load and flatten metadata if JSON
-            if load_sidecars and file.suffix == ".json":
-                metadata = self._load_json_metadata(file)
+                rel_path = file.relative_to(base_dir)
+                entities = extract_entities_from_path(rel_path)
+                entities["path"] = str(file.resolve())
+                entities["rel_path"] = str(file.relative_to(self._root))
+                entities["source"] = source
+                entities["pipeline"] = pipeline
+                entities["is_sidecar"] = is_sidecar_file_with_main_check(file)
 
-                def flatten_metadata(d, parent_key="meta", depth=1, max_depth=2):
-                    items = {}
-                    for k, v in d.items():
-                        new_key = f"{parent_key}_{k}"
-                        if isinstance(v, dict) and depth < max_depth:
-                            items.update(
-                                flatten_metadata(v, new_key, depth + 1, max_depth)
-                            )
-                        elif isinstance(v, (str, int, float, bool)):
-                            items[new_key] = v
-                    return items
+                # Load and flatten metadata if JSON
+                if load_sidecars and file.suffix == ".json":
+                    metadata = self._load_json_metadata(file)
 
-                flat_metadata = flatten_metadata(
-                    metadata, max_depth=load_sidecars_max_depth
-                )
-                entities.update(flat_metadata)
-                entities["json_metadata"] = metadata
+                    def flatten_metadata(d, parent_key="meta", depth=1, max_depth=2):
+                        items = {}
+                        for k, v in d.items():
+                            new_key = f"{parent_key}_{k}"
+                            if isinstance(v, dict) and depth < max_depth:
+                                items.update(
+                                    flatten_metadata(v, new_key, depth + 1, max_depth)
+                                )
+                            elif isinstance(v, (str, int, float, bool)):
+                                items[new_key] = v
+                        return items
 
-            records.append(entities)
+                    flat_metadata = flatten_metadata(
+                        metadata, max_depth=load_sidecars_max_depth
+                    )
+                    entities.update(flat_metadata)
+                    entities["json_metadata"] = metadata
+
+                records.append(entities)
 
         return records
 
@@ -928,6 +930,36 @@ def is_sidecar_file(fname: str) -> bool:
         True if the file is a sidecar.
     """
     return any(fname.endswith(ext) for ext in SIDECAR_EXTENSIONS)
+
+
+def is_sidecar_file_with_main_check(file_path: Path) -> bool:
+    """
+    Check if a file is a sidecar file and if there is a corresponding main file in the same directory.
+
+    Parameters
+    ----------
+    file_path : Path
+        Path to the file to check.
+
+    Returns
+    -------
+    bool
+        True if the file is a sidecar and there is a corresponding main file in the same directory.
+    """
+    if not is_sidecar_file(file_path.name):
+        return False
+
+    # Get the stem of the file (using get_stem to handle compound extensions)
+    stem = get_stem(file_path)
+    parent_dir = file_path.parent
+
+    # Check if there is a corresponding main file with the same stem
+    for ext in IMAGE_EXTENSIONS:
+        main_file = parent_dir / f"{stem}{ext}"
+        if main_file.exists():
+            return True
+
+    return False
 
 
 def resolve_data_root(path: Path, resolve_raw_root: bool = True) -> Path:
