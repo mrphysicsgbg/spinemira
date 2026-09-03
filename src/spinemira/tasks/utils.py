@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from typing import Any
+import typing
 
 from fileformats.application import Json
 from pydra.compose import python
@@ -98,3 +99,58 @@ def make_merge_json_files_task(*input_names: str) -> python.Task:
         return Json(output_path)
 
     return merge_json_files
+
+
+def resolve_json_pointer(data: typing.Any, pointer: str) -> typing.Any:
+    """
+    Resolve a JSON pointer to extract a value from a nested data structure.
+
+    This function implements RFC 6901 JSON Pointer standard to traverse a nested
+    dictionary or list and return the value at the specified pointer path.
+
+    Parameters
+    ----------
+    data : typing.Any
+        The input data structure (e.g., dictionary or list) to traverse.
+    pointer : str
+        JSON pointer string (e.g., `/entities/participant_id` or `/sidecar/statistics/mean`).
+        Must start with a `/` and follow RFC 6901 syntax.
+
+    Returns
+    -------
+    typing.Any
+        The value at the specified JSON pointer path, or `None` if the pointer
+        is invalid or the path does not exist.
+
+    Raises
+    ------
+    ValueError
+        If the pointer does not start with `/`.
+
+    Notes
+    -----
+    This function supports RFC 6901 escaping (e.g., `~0` for `~` and `~1` for `/`).
+    """
+    if pointer == "":
+        return data
+
+    if not pointer.startswith("/"):
+        raise ValueError(f"Invalid JSON pointer: {pointer}")
+
+    value = data
+
+    try:
+        for part in pointer[1:].split("/"):
+            # RFC 6901 escaping
+            part = part.replace("~1", "/").replace("~0", "~")
+
+            if isinstance(value, dict):
+                value = value[part]
+            elif isinstance(value, list):
+                value = value[int(part)]
+            else:
+                data = value[part]
+    except KeyError:
+        return None
+
+    return value
