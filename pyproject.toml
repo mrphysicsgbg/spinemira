@@ -55,9 +55,11 @@ registration = [
 ]
 
 [project.scripts]
-spinemira-demo = "spinemira.workflows.demo.cli:main"
-spinemira-totalspineseg = "spinemira.workflows.totalspineseg.cli:main"
+spinemira-disc-metrics = "spinemira.workflows.metrics.discs.cli:main"
 spinemira-collect-metrics = "spinemira.workflows.metrics.collect.cli:main"
+spinemira-normalize-histogram = "spinemira.workflows.normalization.histogram.cli:main"
+spinemira-normalize-scale = "spinemira.workflows.normalization.scale.cli:main"
+spinemira-totalspineseg = "spinemira.workflows.totalspineseg.cli:main"
 
 [[tool.uv.index]]
 name = "gitlab-spinemira"

@@ -60,11 +60,13 @@ spinemira provides the following command-line scripts that can be executed as mo
 
 ### Installed Scripts (via `pip install`)
 
-| Command | Description |
-|---------|-------------|
-| `spinemira-collect-metrics` | Run the collect metrics workflow |
-| `spinemira-demo` | Run the demo workflow for testing and illustration purposes |
-| `spinemira-totalspineseg` | Run TotalSpineSeg segmentation on a MIDS dataset |
+| Command                         | Description                                      |
+|---------------------------------|--------------------------------------------------|
+| `spinemira-disc-metrics`        | Run the disc analysis workflow                   |
+| `spinemira-collect-metrics`     | Run the collect metrics workflow                 |
+| `spinemira-normalize-histogram` | Run the normalize by histogram workflow          |
+| `spinemira-normalize-scale`     | Run the normalize by scaling workflow            |
+| `spinemira-totalspineseg`       | Run TotalSpineSeg segmentation on a MIDS dataset |
 
 ### Module Execution (Python -m)
 
@@ -109,25 +111,25 @@ All CLI scripts support the following Pydra execution options:
    - Illustrates parallel execution with artificial delays
    - Useful for testing and understanding the framework
 
-2. **TotalSpineSeg Workflow** (`spinemira.workflows.totalspineseg`)
+2. **[TotalSpineSeg Workflow](./src/spinemira/workflows/totalspineseg/README.md)** (`spinemira.workflows.totalspineseg`)
    - Integrates [TotalSpineSeg](github.com/neuropoly/totalspineseg) for automatic spine segmentation
    - Processes entire datasets with support for automatic spine and intervertebral disc segmentation, label map generation, and vertebral level identification
    - Supports CPU and CUDA execution
    - Requires TotalSpineSeg package (`pip install spinemira[segmentation]`)
 
-3. **Disc Metrics Workflow** (`spinemira.workflows.metrics.discs`)
+3. **[Disc Metrics Workflow](./src/spinemira/workflows/metrics/discs/README.md)** (`spinemira.workflows.metrics.discs`)
    - Calculates disc-specific metrics from segmented MRI data
    - Features signal profile analysis across discs, delta-mu calculation, multi-part disc segmentation, and custom disc label definitions
 
-4. **Histogram Matching Normalization** (`spinemira.workflows.normalization.histogram`)
+4. **[Histogram Matching Normalization](./src/spinemira/workflows/normalization/histogram/README.md)** (`spinemira.workflows.normalization.histogram`)
    - Multi-region histogram matching for intensity normalization
    - Region-specific normalization based on segmentation labels with configurable histogram bins and background weighting
 
-5. **Scale Normalization** (`spinemira.workflows.normalization.scale`)
+5. **[Scale Normalization](./src/spinemira/workflows/normalization/scale/README.md)** (`spinemira.workflows.normalization.scale`)
    - Scale-based intensity normalization based on selected segmentation regions
    - Support for rescaling to positive values
 
-5. **Collect metrics** (`spinemira.workflows.metrics.collect`)
+6. **[Collect metrics](./src/spinemira/workflows/metrics/collect/README.md)** (`spinemira.workflows.metrics.collect`)
    - Collects data from sidecars, path entities and participants.tsv
    - Assembles specified data into a table
 
