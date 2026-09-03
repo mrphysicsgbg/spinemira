@@ -1,0 +1,10 @@
+{
+  "Name": "Disc metrics - spinemira Outputs",
+  "DatasetType": "derivative",
+  "GeneratedBy": [
+    {
+      "Name": "Disc metrics - spinemira",
+      "Version": "1.0.0.dev0"
+    }
+  ]
+}
