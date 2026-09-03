@@ -1,0 +1,11 @@
+dataset_root: 'examples/spider_dataset/'
+raw_query: '`source` == "raw"'
+derivative_queries:
+  disc_metrics: '`pipeline` == "disc_metrics"'
+columns:
+  participant_id: '/raw/entities/participant_id'
+  sex: '/participant/sex'
+  disc_l2_l3_mean: '/disc_metrics/sidecar/statistics/DISC_L2_L3/mean'
+  disc_l3_l4_mean: '/disc_metrics/sidecar/statistics/DISC_L3_L4/mean'
+  disc_l4_l5_mean: '/disc_metrics/sidecar/statistics/DISC_L4_L5/mean'
+  disc_l5_s_mean: '/disc_metrics/sidecar/statistics/DISC_L5_S/mean'

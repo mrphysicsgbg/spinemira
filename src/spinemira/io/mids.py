@@ -796,6 +796,62 @@ class Layout:
         return file_groups
 
 
+def read_participants_file(
+    participants_file: str | Path | None = None,
+    dataset_root: str | Path | None = None,
+    encoding: str = "utf-8",
+) -> pd.DataFrame:
+    """
+    Read participants file as DataFrame
+
+    Parameters
+    ----------
+    participants_file : str | Path | None, optional
+        Path to participants file, by default None
+    dataset_root : str | Path | None, optional
+        Path to dataset root, by default None.
+    encoding : str, optional
+        File encoding, by default utf-8.
+
+    Returns
+    -------
+    pd.DataFrame
+        Loaded participants file as a DataFrame
+
+    Notes
+    -----
+    Either `participants_file` or `dataset_root` needs to be specified.
+    """
+
+    if participants_file is None and dataset_root is None:
+        raise ValueError("Either `participants_file` or `dataset_root` is requierd.")
+    elif participants_file is None:
+        assert dataset_root is not None
+        participants_file = default_participants_path(dataset_root)
+
+    participants_df = pd.read_csv(participants_file, sep="\t", encoding=encoding)
+    return participants_df
+
+
+def default_participants_path(root: str | Path) -> Path:
+    """
+    Get default participants file
+
+    Parameters
+    ----------
+    root : str | Path
+        Path to dataset root
+
+    Returns
+    -------
+    path
+        Default path to participants file.
+    """
+    dataset_root_path = Path(root)
+    participants_path = dataset_root_path / "participants.tsv"
+    return participants_path
+
+
 def extract_entities_from_path(rel_path: Path) -> dict[str, Any]:
     """
     Extract BIDS entities and suffix from a relative file path.

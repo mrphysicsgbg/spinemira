@@ -1,7 +1,10 @@
+from collections import defaultdict
 import json
 import logging
 from pathlib import Path
+import typing
 
+from fileformats.application import Json
 from fileformats.core import FileSet, converter
 from fileformats.core.exceptions import FormatMismatchError
 from fileformats.generic import File, Directory
@@ -14,8 +17,12 @@ from spinemira.io.mids import (
     Layout,
     get_stem,
     resolve_derivative as resolve_derivative_path,
+    default_participants_path,
+    read_participants_file,
+    extract_entities_from_path,
     IMAGE_EXTENSIONS,
 )
+from spinemira.tasks.utils import resolve_json_pointer
 
 logger = logging.getLogger(__name__)
 
@@ -335,3 +342,160 @@ def publish_derivative(
     logger.info(f"Published {published}")
 
     return published
+
+
+@python.define(outputs=["file"])
+def get_associated_participant_data(
+    file: FileSet,
+    dataset_root: str | Path | None = None,
+    participants_file: File | None = None,
+) -> Json:
+    """
+    Get associated participant data for an entry as JSON.
+
+    This function extracts participant metadata (e.g., age, sex) for a given file
+    by resolving the participant ID from the file's entities and querying the
+    participants file.
+
+    Parameters
+    ----------
+    file : FileSet
+        Input file (or group of files) for which to retrieve participant data.
+    dataset_root : str | Path | None, optional
+        Root directory of the dataset, used to locate the default participants file
+        if `participants_file` is not provided, by default None.
+    participants_file : File | None, optional
+        Path to a custom participants file. If provided, this file is used instead
+        of the default participants file, by default None.
+
+    Returns
+    -------
+    Json
+        JSON file containing the participant data as a dictionary.
+    """
+
+    # Load participants file
+    participants_file_path = (
+        participants_file.fspath if participants_file is not None else None
+    )
+    participants_df = read_participants_file(
+        participants_file=participants_file_path, dataset_root=dataset_root
+    )
+
+    # Parse subject if from file
+    main_file_path = _select_main_path(file)
+    entities = extract_entities_from_path(main_file_path)
+
+    participant_data: dict[str, typing.Any] = {}
+
+    if "participant_id" in entities:
+        participant_df = participants_df[
+            participants_df["participant_id"] == entities["participant_id"]
+        ]
+        if len(participant_df) == 1:
+            participant_data = participant_df.squeeze().to_dict()
+
+    output_json_path = Path.cwd() / "participant.json"
+
+    with output_json_path.open("w", encoding="utf-8") as f:
+        json.dump(participant_data, f, indent=2)
+
+    return Json(output_json_path)
+
+
+@python.define(outputs=["file"])
+def default_participants_file(dataset_root: Path) -> File:
+    """
+    Get default participants file
+
+    Parameters
+    ----------
+    dataset_root : Path
+        Path to dataset root
+
+    Returns
+    -------
+    File
+        Pointer to participants file
+    """
+    participants = default_participants_path(dataset_root)
+    return File(participants)
+
+
+@python.define(outputs=["json"])
+def collect_entry_data(
+    raw: FileSet,
+    derivative_files: list[FileSet],
+    derivative_names: list[str],
+    participant_data: Json,
+    columns: dict[str, str],
+) -> Json:
+    """
+    Collect data from raw, derivative, and participant files based on specified column definitions.
+
+    This function aggregates data from multiple sources (raw files, derivatives, and participant
+    metadata) and extracts specific fields using JSON pointers defined in the columns dictionary.
+
+    Parameters
+    ----------
+    raw : FileSet
+        Raw file(s) for which to collect data.
+    derivative_files : list[FileSet]
+        List of derivative files (or groups of files) to collect data from.
+    derivative_names : list[str]
+        List of names corresponding to the derivative files (e.g., ["disc_metrics", "seg"]).
+    participant_data : Json
+        JSON file containing participant metadata (e.g., age, sex).
+    columns : dict[str, str]
+        Dictionary defining how to extract data for each column. Keys are the column names
+        in the output, and values are JSON pointers to the field in the extracted data.
+        Use `/entities/` for path-extracted data and `/sidecar/` for sidecar file data.
+
+    Returns
+    -------
+    Json
+        JSON file containing the collected data, with keys corresponding to the column names
+        in the `columns` dictionary.
+    """
+
+    data: dict[str, typing.Any] = defaultdict(dict)
+
+    # Load from participants
+    data["participant"] = participant_data.load()
+
+    # Extract entities
+    data["raw"]["entities"] = extract_entities_from_path(_select_main_path(raw))
+
+    # Load from raw sidecar
+    for file in raw.fspaths:
+        if Json.matches(file):
+            data["raw"]["sidecar"] = Json(file).load()
+            break
+
+    # Load from each derivative
+    for name, derivative_file_set in zip(derivative_names, derivative_files):
+        # Extract entities
+        data[name]["entities"] = extract_entities_from_path(
+            _select_main_path(derivative_file_set)
+        )
+
+        # Load from sidecar
+        for file in derivative_file_set.fspaths:
+            if Json.matches(file):
+                data[name]["sidecar"] = Json(file).load()
+                break
+
+    # Resolve mappings
+    mapped_data: dict[str, typing.Any] = {}
+
+    for column_id, json_pointer in columns.items():
+        value = resolve_json_pointer(data, json_pointer)
+        mapped_data[column_id] = value
+
+    # Save
+    output_json_path = Path.cwd() / "collected.json"
+
+    with output_json_path.open("w", encoding="utf-8") as f:
+        json.dump(mapped_data, f, indent=2)
+
+    return Json(output_json_path)

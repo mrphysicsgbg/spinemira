@@ -44,6 +44,7 @@ spinemira/
 ├── workflows/               # Pre-built Pydra workflows
 │   ├── demo/                # Demo/example workflow
 │   ├── metrics/             # Metric calculation workflows
+│   │   ├── collect/         # Collect data from dataset into a CSV
 │   │   └── discs/           # Disc metrics workflows
 │   ├── normalization/       # Image normalization workflows
 │   │   ├── histogram/       # Histogram matching normalization
@@ -61,6 +62,7 @@ spinemira provides the following command-line scripts that can be executed as mo
 
 | Command | Description |
 |---------|-------------|
+| `spinemira-collect-metrics` | Run the collect metrics workflow |
 | `spinemira-demo` | Run the demo workflow for testing and illustration purposes |
 | `spinemira-totalspineseg` | Run TotalSpineSeg segmentation on a MIDS dataset |
 
@@ -83,6 +85,9 @@ python -m spinemira.workflows.normalization.histogram
 
 # Scale normalization
 python -m spinemira.workflows.normalization.scale
+
+# Collect metrics
+python -m spinemira.workflows.metrics.collect
 ```
 
 ### Common Options
@@ -121,6 +126,10 @@ All CLI scripts support the following Pydra execution options:
 5. **Scale Normalization** (`spinemira.workflows.normalization.scale`)
    - Scale-based intensity normalization based on selected segmentation regions
    - Support for rescaling to positive values
+
+5. **Collect metrics** (`spinemira.workflows.metrics.collect`)
+   - Collects data from sidecars, path entities and participants.tsv
+   - Assembles specified data into a table
 
 ### Legacy and In-Development
 
