@@ -16,6 +16,7 @@ from pydra.compose import python, workflow
 
 import spinemira
 from spinemira.tasks.mids import (
+    index,
     initialize_derivative,
     query_mids,
     publish_derivative,
@@ -94,8 +95,13 @@ def demo_workflow(
         ),
     )
 
+    mids_index = workflow.add(
+        index(dataset_root=dataset_root, include_derivative=True, load_sidecars=False),
+        name="mids_index",
+    )
+
     images = workflow.add(
-        query_mids(dataset_root=dataset_root, query=query),
+        query_mids(dataset_root=dataset_root, query=query, mids_index=mids_index.file),
         name="query_dataset",
     )
 

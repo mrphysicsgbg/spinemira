@@ -1,0 +1,3 @@
+dataset_root: 'examples/spider_dataset/'
+query: '`source` == "raw"'
+output_derivative_name: 'demo'
