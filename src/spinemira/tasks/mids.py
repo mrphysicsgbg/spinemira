@@ -92,7 +92,7 @@ def index(
 
     layout.index(load_sidecars=load_sidecars)
 
-    index_path = Path.cwd() / "index.csv"
+    index_path = Path.cwd() / "index.feather"
 
     layout.save_index(path=index_path, ignore_encoding_errors=ignore_encoding_errors)
 
