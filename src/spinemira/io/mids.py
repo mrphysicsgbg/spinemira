@@ -308,7 +308,7 @@ class Layout:
     def save_index(
         self,
         path: str | Path,
-        format: str = "csv",
+        format: str = "feather",
         ignore_encoding_errors: bool = False,
     ):
         """
@@ -319,7 +319,7 @@ class Layout:
         path : str or Path
             File path to save the DataFrame.
         format : str, optional
-            File format: "csv" or "parquet" (default is "csv").
+            File format: "feather", "csv" or "parquet" (default is "feather").
         ignore_encoding_errors : bool, optional
             Whatever encoding errors should be ignored, by default False
 
@@ -341,7 +341,9 @@ class Layout:
                 lambda x: json.dumps(x) if isinstance(x, dict) else ""
             )
 
-        if format == "csv":
+        if format == "feather":
+            df_to_save.to_feather(path=path)
+        elif format == "csv":
             errors = "strict" if not ignore_encoding_errors else "replace"
             df_to_save.to_csv(
                 path_or_buf=path, index=False, errors=errors, encoding="utf-8"
@@ -351,7 +353,7 @@ class Layout:
         else:
             raise ValueError("Unsupported format. Use 'csv' or 'parquet'.")
 
-    def load_index(self, path: PathLike, format: str = "csv") -> pd.DataFrame:
+    def load_index(self, path: PathLike, format: str = "feather") -> pd.DataFrame:
         """
         Load a previously saved index from disk.
 
@@ -360,7 +362,7 @@ class Layout:
         path : str or Path
             File path of the saved index.
         format : str, optional
-            File format: "csv" or "parquet" (default is "csv").
+            File format: "feather", "csv" or "parquet" (default is "feather").
 
         Returns
         -------
@@ -375,15 +377,21 @@ class Layout:
         path = Path(path)
         format = format.lower()
 
-        if format == "csv":
+        require_json_deserialization = False
+
+        if format == "feather":
+            df = pd.read_feather(path)
+        elif format == "csv":
             df = pd.read_csv(path, converters={"sub": str})
+            require_json_deserialization = True
         elif format == "parquet":
             df = pd.read_parquet(path)
+            require_json_deserialization = True
         else:
-            raise ValueError("Unsupported format. Use 'csv' or 'parquet'.")
+            raise ValueError("Unsupported format. Use 'feather', 'csv' or 'parquet'.")
 
         # Deserialize json_metadata if present
-        if "json_metadata" in df.columns:
+        if "json_metadata" in df.columns and require_json_deserialization:
 
             def safe_load(x):
                 return json.loads(x) if pd.notna(x) and x.strip() != "" else {}

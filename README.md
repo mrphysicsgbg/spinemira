@@ -105,7 +105,7 @@ All CLI scripts support the following Pydra execution options:
 
 ### Pydra-based Workflows
 
-1. **Demo Workflow** (`spinemira.workflows.demo`)
+1. **[Demo Workflow](./src/spinemira/workflows/demo/README.md)** (`spinemira.workflows.demo`)
    - Demonstrates basic Pydra workflow structure
    - Reorients images to LPS coordinate system
    - Illustrates parallel execution with artificial delays
