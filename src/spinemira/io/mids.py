@@ -15,6 +15,8 @@ VALID_EXTENSIONS = IMAGE_EXTENSIONS.union(SIDECAR_EXTENSIONS)
 FILE_NAME_ENTITY_KEYS = [
     "sub",
     "ses",
+    "bp",
+    "vp",
     "acq",
     "dir",
     "run",
