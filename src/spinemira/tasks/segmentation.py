@@ -226,3 +226,99 @@ def run_totalspineseg(
         logger.info(f"File: {str(levels)} created")
 
         return label_map, levels
+
+
+@python.define(outputs=["label_map"])
+def run_muscle_map(
+    image: NiftiGz,
+    region: str = "wholebody",
+    model: str | None = None,
+    model_version: str | None = None,
+    use_gpu: bool = True,
+    overlap: int = 90,
+    chunk_size: int | str = "auto",
+    suffix: str = "dseg",
+    executable: str = "mm_segment",
+) -> NiftiGz:
+    """Run MuscleMap segmentation on a single image.
+
+    Parameters
+    ----------
+    image : NiftiGz
+        Input image file to segment.
+    region : str, optional
+        Anatomical region: wholebody, abdomen, pelvis, thigh, or leg.
+        Defaults to wholebody.
+    model : str | None, optional
+        Alternative model to use. Defaults to the CLI's model selection.
+    model_version : str | None, optional
+        Model version, e.g. "1.3". None selects the latest available version.
+    use_gpu : bool, optional
+        Whether to use a GPU if available. Defaults to True.
+    overlap : int, optional
+        Percent spatial overlap during sliding window inference. Defaults to 90.
+    chunk_size : int | str, optional
+        Axial slices per chunk, or "auto" to size from available memory.
+    suffix : str, optional
+        Output filename suffix without a leading underscore. Defaults to dseg.
+    executable : str, optional
+        MuscleMap executable name or path. Defaults to mm_segment.
+
+    Returns
+    -------
+    NiftiGz
+        Segmentation label map in the task's working directory.
+
+    Raises
+    ------
+    subprocess.CalledProcessError
+        If MuscleMap exits with a non-zero status.
+    FileNotFoundError
+        If MuscleMap does not generate the expected label map.
+    """
+    with tempfile.TemporaryDirectory(prefix="muscle-map-") as tempdir:
+        intermediate_output = Path(tempdir)
+        cmd = [
+            executable,
+            "--input_image", str(Path(image)),
+            "--region", region,
+            "--output_dir", str(intermediate_output),
+            "--use_GPU", "Y" if use_gpu else "N",
+            "--overlap", str(overlap),
+            "--chunk_size", str(chunk_size),
+            "--suffix", suffix,
+        ]
+        if model is not None:
+            cmd.extend(["--model", model])
+        if model_version is not None:
+            cmd.extend(["--model_version", model_version])
+
+        logger.info("Running: %s", " ".join(cmd))
+        with subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        ) as process:
+            if process.stdout is not None:
+                for line in process.stdout:
+                    logger.info(line.rstrip())
+            returncode = process.wait()
+
+        if returncode != 0:
+            raise subprocess.CalledProcessError(returncode, cmd)
+
+        output_name = f"{image.name.removesuffix('.nii.gz')}_{suffix}.nii.gz"
+        generated_label_map = intermediate_output / output_name
+        if not generated_label_map.is_file():
+            raise FileNotFoundError(
+                f"MuscleMap did not generate the expected label map: {generated_label_map}"
+            )
+
+        label_map = NiftiGz(generated_label_map).move(
+            dest_dir=Path.cwd(), overwrite=True
+        )
+        logger.info("File: %s created", label_map)
+
+        return label_map
