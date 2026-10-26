@@ -51,8 +51,7 @@ segmentation = [
 ]
 
 registration = [
-    "python-stk (>=0.4,<0.5)",
-    "pydeform (>=0.5.2,<0.6.0)",
+    "pydeform (>=0.6.0,<0.7.0)",
 ]
 
 [project.scripts]
@@ -61,11 +60,6 @@ spinemira-collect-metrics = "spinemira.workflows.metrics.collect.cli:main"
 spinemira-normalize-histogram = "spinemira.workflows.normalization.histogram.cli:main"
 spinemira-normalize-scale = "spinemira.workflows.normalization.scale.cli:main"
 spinemira-totalspineseg = "spinemira.workflows.totalspineseg.cli:main"
-
-[[tool.uv.index]]
-name = "gitlab-spinemira"
-url = "https://git.vgregion.se/api/v4/projects/6781/packages/pypi/simple"
-default = true
 
 [tool.hatch.build.targets.sdist]
 include = ["src/spinemira"]
