@@ -45,11 +45,6 @@ dev = [
     "ipykernel>=7.1.0,<8",
 ]
 
-segmentation = [
-    "totalspineseg[nnunetv2]>=20260623",
-    "kornia<0.8", # Auglab which is used by totalspineseg imports Tensor from kornia.core which is removed in future versions / 260615
-]
-
 registration = [
     "pydeform (>=0.6.0,<0.7.0)",
 ]
