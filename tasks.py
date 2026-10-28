@@ -6,9 +6,6 @@ import subprocess
 import sys
 
 
-JUPYTER_PORT = 18888
-
-
 def ensure_uv():
     """Verify uv is installed and available on PATH."""
     if shutil.which("uv") is None:
@@ -67,37 +64,6 @@ def build():
     run("uv", "build")
 
 
-def jupyter_kernel():
-    """Install kernel for Jupyter."""
-    print("Install Jupyter kernel")
-    run(
-        "uv",
-        "run",
-        "python",
-        "-m",
-        "ipykernel",
-        "install",
-        "--user",
-        "--name",
-        "spinemira",
-        "--display-name",
-        "Python (spinemira)",
-    )
-
-
-def jupyter():
-    """Run Jupyter Lab."""
-    print("Starting Jupyter Lab")
-    run(
-        "uv",
-        "run",
-        "jupyter",
-        "lab",
-        "--no-browser",
-        f"--port={JUPYTER_PORT}",
-    )
-
-
 COMMANDS = {
     "install": install,
     "install-dev": install_dev,
@@ -105,8 +71,6 @@ COMMANDS = {
     "test": test,
     "build": build,
     "clean-build": clean_build,
-    "jupyter-kernel": jupyter_kernel,
-    "jupyter": jupyter,
 }
 
 
