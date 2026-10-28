@@ -252,6 +252,38 @@ def winsorize(
     return image_filtered
 
 
+def merge_label_maps(label_maps: list[sitk.Image]) -> sitk.Image:
+    """Merge label maps, giving earlier nonzero labels priority.
+
+    The first image defines the output geometry. Images with different geometry
+    are resampled onto its grid using nearest-neighbor interpolation. Labels
+    and the output are represented as unsigned 16-bit integers.
+
+    Raises
+    ------
+    ValueError
+        If no label maps are provided.
+    """
+    if not label_maps:
+        raise ValueError("At least one label map is required.")
+
+    merged = sitk.Cast(label_maps[0], sitk.sitkUInt16)
+    for label_map in label_maps[1:]:
+        label_map = sitk.Cast(label_map, sitk.sitkUInt16)
+        if not label_map.IsSameImageGeometryAs(merged):
+            label_map = sitk.Resample(
+                label_map,
+                merged,
+                sitk.Transform(),
+                sitk.sitkNearestNeighbor,
+                0,
+                sitk.sitkUInt16,
+            )
+        merged = merged + sitk.Mask(label_map, merged == 0)
+
+    return merged
+
+
 def filter_label_map(label_map: sitk.Image, labels: set[int]) -> sitk.Image:
     """
     Filter a label map by retaining only the specified labels.

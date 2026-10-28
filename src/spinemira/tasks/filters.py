@@ -353,3 +353,68 @@ def rescale(
     sitk.WriteImage(filtered_sitk, output_path)
 
     return NiftiGz(output_path)
+
+
+def make_merge_label_maps_task(*input_names: str) -> python.Task:
+    """
+    Create a Pydra task that merges multiple NiftiGz files into a single output.
+
+    This function generates a Pydra task that takes multiple NiftiGz files as input,
+    merges their contents, and outputs a NiftiGz file with combined labels.
+
+    Parameters
+    ----------
+    *input_names : str
+        Variable-length list of input names for the NiftiGz files to be merged.
+        Each input name corresponds to a NiftiGz file path.
+
+    Returns
+    -------
+    python.Task
+        A Pydra task that, when executed, merge the input NiftiGz files and produces
+        a single merged NiftiGz file
+
+    Notes
+    -----
+    Earlier label maps take priority at nonzero voxels. Later maps are resampled
+    to the first map's geometry when necessary.
+
+    See Also
+    --------
+    spinemira.core.filters.merge_label_maps : Core implementation
+    """
+
+    @python.define(
+        inputs={name: NiftiGz for name in input_names},
+        outputs={"label_map": NiftiGz},
+        name="merge_label_maps",
+    )
+    def merge_label_maps(**label_maps: NiftiGz) -> NiftiGz:
+        """
+        Merge multiple label maps into a single output file.
+
+        Parameters
+        ----------
+        **label_maps : NiftiGz
+            Keyword arguments where each key is an input name and each value
+            is a `NiftiGz` object representing a Nifti file path.
+
+        Returns
+        -------
+        NiftiGz
+            A `NiftiGz` object pointing to the output file containing the merged
+            label maps.
+        """
+
+        images = [
+            load_image(label_map.fspath, pixel_type=sitk.sitkUInt16)
+            for label_map in label_maps.values()
+        ]
+        merged_sitk = filters.merge_label_maps(images)
+
+        output_path = Path.cwd() / "merged.nii.gz"
+        sitk.WriteImage(merged_sitk, output_path)
+
+        return NiftiGz(output_path)
+
+    return merge_label_maps

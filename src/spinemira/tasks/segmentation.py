@@ -1,5 +1,7 @@
 import logging
+import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 
@@ -11,6 +13,57 @@ from spinemira.core.segmentation import utils as segmentationUtils
 
 
 logger = logging.getLogger(__name__)
+
+
+def _segmentation_executable(executable: str, default: str, variable: str) -> str:
+    """Use the configured environment path when the default command is selected."""
+    if executable == default:
+        return os.environ.get(variable) or executable
+    return executable
+
+
+def is_totalspineseg_available(executable: str = "totalspineseg") -> bool:
+    """
+    Check if TotalSpineSeg command is installed.
+
+    Parameters
+    ----------
+    executable : str, by default totalspineseg
+        Name of executable
+
+    Returns
+    -------
+    Boolean indicating if totalspineseg was found
+    """
+    return (
+        shutil.which(
+            _segmentation_executable(
+                executable, "totalspineseg", "TOTALSPINESEG_EXECUTABLE"
+            )
+        )
+        is not None
+    )
+
+
+def is_muscle_map_segment_available(executable: str = "mm_segment") -> bool:
+    """
+    Check if MuscleMap segmentation command is installed.
+
+    Parameters
+    ----------
+    executable : str, by default mm_segment
+        Name of executable
+
+    Returns
+    -------
+    Boolean indicating if MuscleMap was found
+    """
+    return (
+        shutil.which(
+            _segmentation_executable(executable, "mm_segment", "MUSCLEMAP_EXECUTABLE")
+        )
+        is not None
+    )
 
 
 @python.define(outputs=["file"])
@@ -112,7 +165,8 @@ def run_totalspineseg(
     quiet : bool, optional
         Whether to suppress logging output, by default False.
     executable : str, optional
-        Name of the TotalSpineSeg executable, by default "totalspineseg".
+        Executable name or path. The default uses TOTALSPINESEG_EXECUTABLE
+        when set, otherwise "totalspineseg" on PATH.
 
     Returns
     -------
@@ -131,7 +185,9 @@ def run_totalspineseg(
         intermediate_output = Path(tempdir)
 
         cmd = [
-            executable,
+            _segmentation_executable(
+                executable, "totalspineseg", "TOTALSPINESEG_EXECUTABLE"
+            ),
             str(Path(image)),
             str(intermediate_output),
         ]
@@ -262,7 +318,8 @@ def run_muscle_map(
     suffix : str, optional
         Output filename suffix without a leading underscore. Defaults to dseg.
     executable : str, optional
-        MuscleMap executable name or path. Defaults to mm_segment.
+        Executable name or path. The default uses MUSCLEMAP_EXECUTABLE
+        when set, otherwise "mm_segment" on PATH.
 
     Returns
     -------
@@ -279,14 +336,21 @@ def run_muscle_map(
     with tempfile.TemporaryDirectory(prefix="muscle-map-") as tempdir:
         intermediate_output = Path(tempdir)
         cmd = [
-            executable,
-            "--input_image", str(Path(image)),
-            "--region", region,
-            "--output_dir", str(intermediate_output),
-            "--use_GPU", "Y" if use_gpu else "N",
-            "--overlap", str(overlap),
-            "--chunk_size", str(chunk_size),
-            "--suffix", suffix,
+            _segmentation_executable(executable, "mm_segment", "MUSCLEMAP_EXECUTABLE"),
+            "--input_image",
+            str(Path(image)),
+            "--region",
+            region,
+            "--output_dir",
+            str(intermediate_output),
+            "--use_GPU",
+            "Y" if use_gpu else "N",
+            "--overlap",
+            str(overlap),
+            "--chunk_size",
+            str(chunk_size),
+            "--suffix",
+            suffix,
         ]
         if model is not None:
             cmd.extend(["--model", model])
