@@ -136,6 +136,7 @@ def run_totalspineseg(
     image: NiftiGz,
     data_dir: Path,
     device: str = "cpu",
+    localizer: NiftiGz | None = None,
     iso: bool = False,
     no_stalling: bool = False,
     max_workers: int | None = None,
@@ -154,6 +155,8 @@ def run_totalspineseg(
         Directory containing TotalSpineSeg data and models.
     device : str, optional
         Device to run inference on (e.g., "cpu", "cuda"), by default "cpu".
+    localizer : NiftiGz
+        Input localizer segmentation to use to detect first vertebrae, by default None.
     iso : bool, optional
         Whether to use isotropic resampling, by default False.
     no_stalling : bool, optional
@@ -201,6 +204,9 @@ def run_totalspineseg(
                 str(data_dir),
             ]
         )
+
+        if localizer is not None:
+            cmd.extend(["--loc", str(Path(localizer.fspath))])
 
         if no_stalling:
             cmd.append("--no-stalling")
