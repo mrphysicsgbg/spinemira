@@ -97,6 +97,7 @@ def segment_single_image_workflow(
     musclemap_model_version: str | None = None,
     use_totalspineseg: bool = True,
     use_musclemap: bool = True,
+    localizer: NiftiGz | None = None,
 ) -> tuple[NiftiGz | None, NiftiGz | None]:
     """Run enabled, available tools and publish their labels.
 
@@ -140,6 +141,7 @@ def segment_single_image_workflow(
                 device=device,
                 quiet=totalspineseg_quiet,
                 executable=totalspineseg_executable,
+                localizer=localizer,
             ),
             name="run_totalspineseg",
         )
