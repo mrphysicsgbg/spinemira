@@ -56,9 +56,13 @@ def select_related_images(
                 if pd.isna(row.get("ses"))
                 else candidates["ses"].eq(row["ses"])
             ]
+        if "suffix" in candidates.columns and pd.notna(row.get("suffix")):
+            same_weight = candidates[candidates["suffix"].eq(row["suffix"])]
+            if not same_weight.empty:
+                candidates = same_weight
         if len(candidates) != 1:
             logger.warning(
-                "Skipping %s: expected one sagittal image in the session, found %d",
+                "Skipping %s: expected one sagittal image after weight matching, found %d",
                 row["path"],
                 len(candidates),
             )
