@@ -21,6 +21,9 @@ def run_segment_dataset_workflow(
     musclemap_model_version: str | None = None,
     use_totalspineseg: bool = True,
     use_musclemap: bool = True,
+    sagittal_first: bool = False,
+    sagittal_query: str = '`vp` == "sag"',
+    axial_query: str = '`vp` == "ax"',
     rerun: bool = False,
     worker: str = "debug",
 ):
@@ -48,6 +51,9 @@ def run_segment_dataset_workflow(
         musclemap_model_version=musclemap_model_version,
         use_totalspineseg=use_totalspineseg,
         use_musclemap=use_musclemap,
+        sagittal_first=sagittal_first,
+        sagittal_query=sagittal_query,
+        axial_query=axial_query,
     )
     return wf(worker=worker, rerun=rerun, propagate_rerun=True)
 
