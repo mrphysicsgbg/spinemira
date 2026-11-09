@@ -12,6 +12,7 @@ from spinemira.core.segmentation import segmentation as core_segmentation
 from spinemira.core.segmentation import utils as core_utils
 from spinemira.core.segmentation.segmentation import (
     is_muscle_map_segment_available as is_muscle_map_segment_available,
+    is_sct_deepseg_available as is_sct_deepseg_available,
     is_totalspineseg_available as is_totalspineseg_available,
 )
 from spinemira.io.mids import resolve_derivative
@@ -260,3 +261,19 @@ def _resolve_output_paths(
 def label_metadata(source, enum):
     """Build sidecar label metadata for a segmentation tool."""
     return {member.value: [{"source": source, "name": member.name}] for member in enum}
+
+
+@python.define(outputs=["label_map"])
+def run_sct_deepseg(
+    image: NiftiGz,
+    model: str = "sc_canal_t2",
+    executable: str = "sct_deepseg",
+) -> NiftiGz:
+    """Run an installed SCT deepseg model producing one NIfTI segmentation."""
+    return NiftiGz(
+        core_segmentation.run_sct_deepseg(
+            image=Path(image.fspath),
+            model=model,
+            executable=executable,
+        )
+    )

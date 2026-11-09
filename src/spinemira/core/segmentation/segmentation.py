@@ -60,6 +60,18 @@ def is_muscle_map_segment_available(executable: str = "mm_segment") -> bool:
     )
 
 
+def is_sct_deepseg_available(executable: str = "sct_deepseg") -> bool:
+    """Check whether the configured SCT deep segmentation command is available."""
+    return (
+        shutil.which(
+            _segmentation_executable(
+                executable, "sct_deepseg", "SCT_DEEPSEG_EXECUTABLE"
+            )
+        )
+        is not None
+    )
+
+
 def run_totalspineseg(
     image: Path,
     data_dir: Path,
@@ -331,3 +343,49 @@ def run_muscle_map(
         logger.info("File: %s created", label_map)
 
         return label_map
+
+
+def run_sct_deepseg(
+    image: Path,
+    model: str = "sc_canal_t2",
+    executable: str = "sct_deepseg",
+    output_dir: Path | None = None,
+) -> Path:
+    """Run an SCT deepseg model on one image and return its single output mask.
+
+    The model must already be installed in SCT. This wrapper expects a model
+    with exactly one NIfTI output and raises if inference or output collection fails.
+    """
+
+    image = Path(image).resolve()
+    destination = Path.cwd() if output_dir is None else Path(output_dir).resolve()
+    destination.mkdir(parents=True, exist_ok=True)
+
+    with tempfile.TemporaryDirectory(prefix="sct-deepseg-") as tempdir:
+        output_base = Path(tempdir) / "segmentation.nii.gz"
+
+        cmd = [
+            _segmentation_executable(
+                executable, "sct_deepseg", "SCT_DEEPSEG_EXECUTABLE"
+            ),
+            model,
+            "-i",
+            str(image),
+            "-o",
+            str(output_base),
+        ]
+
+        logger.info("Running: %s", " ".join(cmd))
+
+        subprocess.run(cmd, check=True)
+
+        outputs = list(Path(tempdir).glob("segmentation*.nii.gz"))
+        if len(outputs) != 1:
+            raise FileNotFoundError(
+                f"Expected one SCT deepseg NIfTI output for {model}, found {len(outputs)}: {outputs}"
+            )
+
+        label_map = destination / f"{image.name.removesuffix('.nii.gz')}_dseg.nii.gz"
+        shutil.move(str(outputs[0]), str(label_map))
+
+    return label_map
