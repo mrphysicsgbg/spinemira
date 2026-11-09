@@ -24,9 +24,7 @@ logger = logging.getLogger(__name__)
         "axial",
         "sources",
         "sagittal_labels",
-        "sagittal_levels",
         "axial_labels",
-        "axial_levels",
     ]
 )
 def select_related_images(
@@ -40,18 +38,16 @@ def select_related_images(
     layout = Layout(dataset_root, include_derivatives=True)
     layout.load_index(Path(mids_index))
     selected = layout.query(image_query)
-    print("Selected")
-    print(selected)
     selected = selected[~selected["is_sidecar"]]
-    print("Not sidecar:")
-    print(selected)
     sagittal = selected.query(sagittal_query)
     axial = selected.query(axial_query)
     if set(sagittal.path) & set(axial.path):
         raise ValueError("Sagittal and axial queries must select different images")
 
-    sag = [Path(p) for p in sagittal.path]
-    ax, sources = [], []
+    groups: dict[str, dict[str, list[Path]]] = {}
+    for _, row in sagittal.iterrows():
+        group = groups.setdefault(row["sub"], {"sag": [], "ax": [], "sources": []})
+        group["sag"].append(Path(row["path"]))
     for _, row in axial.iterrows():
         candidates = sagittal[sagittal["sub"].eq(row["sub"])]
         if "ses" in selected.columns:
@@ -67,8 +63,9 @@ def select_related_images(
                 len(candidates),
             )
             continue
-        ax.append(Path(row["path"]))
-        sources.append(Path(candidates.iloc[0]["path"]))
+        group = groups[row["sub"]]
+        group["ax"].append(Path(row["path"]))
+        group["sources"].append(Path(candidates.iloc[0]["path"]))
 
     def dest(paths, suffix):
         return [
@@ -76,22 +73,13 @@ def select_related_images(
             for p in paths
         ]
 
-    print("Test query:")
-    print(sagittal_query)
-
-    ret = (
-        sag,
-        ax,
-        sources,
-        dest(sag, "dseg"),
-        dest(sag, "levels"),
-        dest(ax, "dseg"),
-        dest(ax, "levels"),
+    return (
+        [group["sag"] for group in groups.values()],
+        [group["ax"] for group in groups.values()],
+        [group["sources"] for group in groups.values()],
+        [dest(group["sag"], "dseg") for group in groups.values()],
+        [dest(group["ax"], "dseg") for group in groups.values()],
     )
-
-    print(ret)
-
-    return ret
 
 
 @python.define(outputs=["localizers"])
@@ -148,11 +136,14 @@ def require_sidecar(label_map: NiftiGz, sidecar: Json) -> NiftiGzX:
     return NiftiGzX(label_map.fspath, sidecar.fspath)
 
 
-@python.define(outputs=["label_maps", "levels"])
+@python.define(outputs=["label_maps"])
 def combine_results(
     sagittal_labels: list[NiftiGzX],
-    sagittal_levels: list[NiftiGz],
     axial_labels: list[NiftiGzX],
-    axial_levels: list[NiftiGz],
 ):
-    return sagittal_labels + axial_labels, sagittal_levels + axial_levels
+    return sagittal_labels + axial_labels
+
+
+@python.define(outputs=["label_maps"])
+def flatten_results(groups: list[list[NiftiGzX]]) -> list[NiftiGzX]:
+    return [label for group in groups for label in group]

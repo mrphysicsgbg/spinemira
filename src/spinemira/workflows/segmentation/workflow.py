@@ -24,6 +24,7 @@ from spinemira.tasks.segmentation import (
 from spinemira.workflows.segmentation.context import (
     combine_results,
     create_label_sidecar,
+    flatten_results,
     require_sidecar,
     select_localizers,
     select_related_images,
@@ -56,18 +57,17 @@ def _enabled_tools(
     return use_totalspineseg, use_musclemap
 
 
-@python.define(outputs=["label_maps", "levels"])
+@python.define(outputs=["label_maps"])
 def _resolve_output_paths(
     files: list[FileSet],
     derivative_folder: Path,
-) -> tuple[list[Path], list[Path]]:
+) -> list[Path]:
     """Resolve destinations together to preserve paths for identical images.
 
     FileSet hashes are based on contents, so resolving each file in a separate
     cached task can reuse another subject's destination for identical images.
     """
     label_maps = []
-    levels = []
     for file in files:
         images = [path for path in file.fspaths if NiftiGz.matches(path)]
         if len(images) != 1:
@@ -79,21 +79,13 @@ def _resolve_output_paths(
                 suffix="dseg",
             )
         )
-        levels.append(
-            resolve_derivative_path(
-                original=images[0],
-                derivative_folder=derivative_folder,
-                suffix="levels",
-            )
-        )
-    return label_maps, levels
+    return label_maps
 
 
-@workflow.define(outputs=["label_map", "levels"])
+@workflow.define(outputs=["label_map"])
 def segment_single_image_workflow(
     image: NiftiGz,
     output_label_map: Path,
-    output_levels: Path,
     totalspineseg_data_dir: Path | None = None,
     overwrite: bool = False,
     device: str = "cpu",
@@ -106,11 +98,11 @@ def segment_single_image_workflow(
     use_totalspineseg: bool = True,
     use_musclemap: bool = True,
     localizer: NiftiGz | None = None,
-) -> tuple[NiftiGz | None, NiftiGz | None]:
+) -> NiftiGz | None:
     """Run enabled, available tools and publish their labels.
 
-    Merge when both tools run, giving TotalSpineSeg priority. Levels are None
-    without TotalSpineSeg; both outputs are None when no tool can run.
+    Merge when both tools run, giving TotalSpineSeg priority. The output is
+    None when no tool can run.
     Existing outputs are reused unless overwrite is true. Set overwrite when
     changing tool selection for an existing derivative.
     """
@@ -123,18 +115,11 @@ def segment_single_image_workflow(
     )
     if not (use_totalspineseg or use_musclemap):
         logger.info("No segmentation tools enabled and available. Skipping %s", image)
-        return None, None
+        return None
 
-    if (
-        output_label_map.exists()
-        and (not use_totalspineseg or output_levels.exists())
-        and not overwrite
-    ):
+    if output_label_map.exists() and not overwrite:
         logger.info("Reusing existing segmentation: %s", output_label_map)
-        return (
-            NiftiGz(output_label_map),
-            NiftiGz(output_levels) if use_totalspineseg else None,
-        )
+        return NiftiGz(output_label_map)
 
     totalspineseg_output = None
     musclemap_output = None
@@ -152,6 +137,7 @@ def segment_single_image_workflow(
                 executable=totalspineseg_executable,
                 localizer=localizer,
                 no_stalling=True,
+                collect_levels=False,
             ),
             name="run_totalspineseg",
         )
@@ -191,26 +177,13 @@ def segment_single_image_workflow(
         name="publish_label_map",
     )
 
-    levels = None
-    if totalspineseg_output is not None:
-        published_levels = workflow.add(
-            publish_derivative(
-                file=totalspineseg_output.levels,
-                destination=output_levels,
-                overwrite=True,
-            ),
-            name="publish_levels",
-        )
-        levels = published_levels.file
-
-    return published_label_map.file, levels
+    return published_label_map.file
 
 
-@workflow.define(outputs=["label_map", "levels"])
+@workflow.define(outputs=["label_map"])
 def segment_with_sidecar_workflow(
     image: NiftiGz,
     output_label_map: Path,
-    output_levels: Path,
     totalspineseg_data_dir: Path | None = None,
     overwrite: bool = False,
     device: str = "cpu",
@@ -240,7 +213,6 @@ def segment_with_sidecar_workflow(
         segment_single_image_workflow(
             image=image,
             output_label_map=output_label_map,
-            output_levels=output_levels,
             use_totalspineseg=use_totalspineseg,
             use_musclemap=use_musclemap,
             localizer=localizer,
@@ -269,10 +241,81 @@ def segment_with_sidecar_workflow(
         require_sidecar(label_map=segmented.label_map, sidecar=published.file),
         name="require_sidecar",
     )
-    return labeled.label_map, segmented.levels
+    return labeled.label_map
 
 
-@workflow.define(outputs=["label_map", "levels"])
+@workflow.define(outputs=["label_map"])
+def segment_subject_sagittal_first_workflow(
+    sagittal: list[Path],
+    axial: list[Path],
+    sources: list[Path],
+    sagittal_labels: list[Path],
+    axial_labels: list[Path],
+    totalspineseg_data_dir: Path | None = None,
+    overwrite: bool = False,
+    device: str = "cpu",
+    totalspineseg_quiet: bool = False,
+    totalspineseg_executable: str = "totalspineseg",
+    musclemap_executable: str = "mm_segment",
+    musclemap_region: str = "wholebody",
+    musclemap_model: str | None = None,
+    musclemap_model_version: str | None = None,
+    use_totalspineseg: bool = True,
+    use_musclemap: bool = True,
+):
+    """Segment a subject's sagittal images, then use them to localize axial images."""
+    options = dict(
+        totalspineseg_data_dir=totalspineseg_data_dir,
+        overwrite=overwrite,
+        device=device,
+        totalspineseg_quiet=totalspineseg_quiet,
+        totalspineseg_executable=totalspineseg_executable,
+        musclemap_executable=musclemap_executable,
+        musclemap_region=musclemap_region,
+        musclemap_model=musclemap_model,
+        musclemap_model_version=musclemap_model_version,
+        use_totalspineseg=use_totalspineseg,
+        use_musclemap=use_musclemap,
+    )
+    sag = workflow.add(
+        segment_with_sidecar_workflow(**options)
+        .split(
+            ("image", "output_label_map"),
+            image=sagittal,
+            output_label_map=sagittal_labels,
+        )
+        .combine("image"),
+        name="segment_sagittal",
+    )
+    localizers = workflow.add(
+        select_localizers(sagittal=sagittal, labels=sag.label_map, sources=sources),
+        name="select_localizers",
+    )
+    filtered = workflow.add(
+        totalspineseg_localizer()
+        .split("label_map", label_map=localizers.localizers)
+        .combine("label_map"),
+        name="filter_localizers",
+    )
+    ax = workflow.add(
+        segment_with_sidecar_workflow(**options)
+        .split(
+            ("image", "output_label_map", "localizer"),
+            image=axial,
+            output_label_map=axial_labels,
+            localizer=filtered.label_map,
+        )
+        .combine("image"),
+        name="segment_axial",
+    )
+    results = workflow.add(
+        combine_results(sagittal_labels=sag.label_map, axial_labels=ax.label_map),
+        name="combine_results",
+    )
+    return results.label_maps
+
+
+@workflow.define(outputs=["label_map"])
 def segment_dataset_workflow(
     dataset_root: Path,
     image_query: str,
@@ -336,9 +379,9 @@ def segment_dataset_workflow(
 
     Returns
     -------
-    tuple[Any, Any]
-        Label maps and optional TotalSpineSeg levels in query order. In
-        sagittal-first mode, sagittal results precede axial results. Empty lists
+    list[NiftiGzX]
+        Label maps in query order. In sagittal-first mode, results are grouped
+        by subject, with sagittal results preceding axial results within each group. An empty list is returned
         when neither tool is enabled and available.
     """
 
@@ -353,7 +396,7 @@ def segment_dataset_workflow(
 
     if not (use_totalspineseg or use_musclemap):
         logger.info("No segmentation tools enabled and available. Skipping dataset.")
-        label_maps, levels = [], []
+        label_maps = []
     else:
         pipeline_name = (
             " + ".join(
@@ -411,57 +454,23 @@ def segment_dataset_workflow(
                 ),
                 name="select_related_images",
             )
-            sag = workflow.add(
-                segment_with_sidecar_workflow(**options)
+            subjects = workflow.add(
+                segment_subject_sagittal_first_workflow(**options)
                 .split(
-                    (
-                        "image",
-                        "output_label_map",
-                        "output_levels",
-                    ),
-                    image=related.sagittal,
-                    output_label_map=related.sagittal_labels,
-                    output_levels=related.sagittal_levels,
-                )
-                .combine("image"),
-                name="segment_sagittal",
-            )
-            localizers = workflow.add(
-                select_localizers(
+                    ("sagittal", "axial", "sources", "sagittal_labels", "axial_labels"),
                     sagittal=related.sagittal,
-                    labels=sag.label_map,
+                    axial=related.axial,
                     sources=related.sources,
-                ),
-                name="select_localizers",
-            )
-            filtered_localizers = workflow.add(
-                totalspineseg_localizer()
-                .split("label_map", label_map=localizers.localizers)
-                .combine("label_map"),
-                name="filter_localizers",
-            )
-            ax = workflow.add(
-                segment_with_sidecar_workflow(**options)
-                .split(
-                    ("image", "output_label_map", "output_levels", "localizer"),
-                    image=related.axial,
-                    output_label_map=related.axial_labels,
-                    output_levels=related.axial_levels,
-                    localizer=filtered_localizers.label_map,
+                    sagittal_labels=related.sagittal_labels,
+                    axial_labels=related.axial_labels,
                 )
-                .combine("image"),
-                name="segment_axial",
+                .combine("sagittal"),
+                name="segment_subjects_sagittal_first",
             )
             results = workflow.add(
-                combine_results(
-                    sagittal_labels=sag.label_map,
-                    sagittal_levels=sag.levels,
-                    axial_labels=ax.label_map,
-                    axial_levels=ax.levels,
-                ),
-                name="combine_results",
+                flatten_results(groups=subjects.label_map), name="flatten_results"
             )
-            label_maps, levels = results.label_maps, results.levels
+            label_maps = results.label_maps
         else:
             images = workflow.add(
                 query_mids(
@@ -483,15 +492,14 @@ def segment_dataset_workflow(
             segmented = workflow.add(
                 segment_with_sidecar_workflow(**options)
                 .split(
-                    ("image", "output_label_map", "output_levels"),
+                    ("image", "output_label_map"),
                     image=images.files,
                     output_label_map=destinations.label_maps,
-                    output_levels=destinations.levels,
                 )
                 .combine("image"),
                 name="process_single_image",
             )
 
-            label_maps, levels = segmented.label_map, segmented.levels
+            label_maps = segmented.label_map
 
-    return label_maps, levels
+    return label_maps
