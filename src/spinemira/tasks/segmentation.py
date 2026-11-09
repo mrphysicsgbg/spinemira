@@ -1,7 +1,11 @@
+import json
 from pathlib import Path
 
 import SimpleITK as sitk
+from fileformats.application import Json
+from fileformats.core import FileSet
 from fileformats.medimage import NiftiGz
+import numpy as np
 from pydra.compose import python
 
 from spinemira.core.segmentation import segmentation as core_segmentation
@@ -10,6 +14,7 @@ from spinemira.core.segmentation.segmentation import (
     is_muscle_map_segment_available as is_muscle_map_segment_available,
     is_totalspineseg_available as is_totalspineseg_available,
 )
+from spinemira.io.mids import resolve_derivative
 
 
 @python.define(outputs=["file"])
@@ -210,3 +215,48 @@ def run_muscle_map(
         executable=executable,
     )
     return NiftiGz(label_map)
+
+
+@python.define(outputs=["file"])
+def create_label_sidecar(
+    label_map: NiftiGz, labels: dict[int, list[dict[str, str]]]
+) -> Json:
+    values = sorted(
+        int(v)
+        for v in np.unique(sitk.GetArrayFromImage(sitk.ReadImage(str(label_map))))
+        if v != 0
+    )
+    sidecar_labels = {str(value): labels.get(value, []) for value in values}
+    path = Path.cwd() / "dseg.json"
+    path.write_text(json.dumps({"Labels": sidecar_labels}, indent=2) + "\n")
+    return Json(path)
+
+
+@python.define(outputs=["label_maps"])
+def _resolve_output_paths(
+    files: list[FileSet],
+    derivative_folder: Path,
+) -> list[Path]:
+    """Resolve destinations together to preserve paths for identical images.
+
+    FileSet hashes are based on contents, so resolving each file in a separate
+    cached task can reuse another subject's destination for identical images.
+    """
+    label_maps = []
+    for file in files:
+        images = [path for path in file.fspaths if NiftiGz.matches(path)]
+        if len(images) != 1:
+            raise ValueError(f"Expected one NIfTI image in {file}, found {len(images)}")
+        label_maps.append(
+            resolve_derivative(
+                original=images[0],
+                derivative_folder=derivative_folder,
+                suffix="dseg",
+            )
+        )
+    return label_maps
+
+
+def label_metadata(source, enum):
+    """Build sidecar label metadata for a segmentation tool."""
+    return {member.value: [{"source": source, "name": member.name}] for member in enum}

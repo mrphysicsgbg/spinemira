@@ -52,7 +52,8 @@ spinemira-collect-metrics = "spinemira.workflows.metrics.collect.cli:main"
 spinemira-normalize-histogram = "spinemira.workflows.normalization.histogram.cli:main"
 spinemira-normalize-scale = "spinemira.workflows.normalization.scale.cli:main"
 spinemira-totalspineseg = "spinemira.workflows.totalspineseg.cli:main"
-spinemira-segmentation = "spinemira.workflows.segmentation.cli:main"
+spinemira-segment-totalspineseg = "spinemira.workflows.segmentation.totalspineseg.cli:main"
+spinemira-segment-musclemap = "spinemira.workflows.segmentation.musclemap.cli:main"
 
 [tool.hatch.build.targets.sdist]
 include = ["src/spinemira"]
