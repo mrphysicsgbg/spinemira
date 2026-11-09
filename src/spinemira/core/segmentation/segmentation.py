@@ -72,7 +72,8 @@ def run_totalspineseg(
     quiet: bool = False,
     executable: str = "totalspineseg",
     output_dir: Path | None = None,
-) -> tuple[Path, Path]:
+    collect_levels: bool = True,
+) -> tuple[Path, Path | None]:
     """
     Run TotalSpineSeg segmentation on a single image.
 
@@ -102,11 +103,13 @@ def run_totalspineseg(
 
     output_dir : Path | None, optional
         Directory for output files. Defaults to the current directory.
+    collect_levels : bool, optional
+        Collect the levels map alongside the segmentation, by default True.
 
     Returns
     -------
-    tuple[Path, Path]
-        A tuple containing the output label map file and levels map file.
+    tuple[Path, Path | None]
+        The output label map and, when requested, the levels map.
 
     Raises
     ------
@@ -202,7 +205,7 @@ def run_totalspineseg(
                 f"TotalSpineSeg did not generate the expected label map: {str(generated_label_map)}"
             )
 
-        if not generated_levels_map.is_file():
+        if collect_levels and not generated_levels_map.is_file():
             raise FileNotFoundError(
                 f"TotalSpineSeg did not generate the expected levels map: {str(generated_levels_map)}"
             )
@@ -211,12 +214,13 @@ def run_totalspineseg(
         destination.mkdir(parents=True, exist_ok=True)
         stem = image.name.removesuffix(".nii.gz")
         label_map = destination / f"{stem}_dseg.nii.gz"
-        levels = destination / f"{stem}_levels.nii.gz"
         shutil.move(str(generated_label_map), str(label_map))
-        shutil.move(str(generated_levels_map), str(levels))
-
         logger.info(f"File: {str(label_map)} created")
-        logger.info(f"File: {str(levels)} created")
+        levels = None
+        if collect_levels:
+            levels = destination / f"{stem}_levels.nii.gz"
+            shutil.move(str(generated_levels_map), str(levels))
+            logger.info(f"File: {str(levels)} created")
 
         return label_map, levels
 

@@ -89,7 +89,8 @@ def run_totalspineseg(
     max_workers_nnunet: int | None = None,
     quiet: bool = False,
     executable: str = "totalspineseg",
-) -> tuple[NiftiGz, NiftiGz]:
+    collect_levels: bool = True,
+) -> tuple[NiftiGz, NiftiGz | None]:
     """
     Run TotalSpineSeg segmentation on a single image.
 
@@ -116,11 +117,13 @@ def run_totalspineseg(
     executable : str, optional
         Executable name or path. The default uses TOTALSPINESEG_EXECUTABLE
         when set, otherwise "totalspineseg" on PATH.
+    collect_levels : bool, optional
+        Collect the levels map alongside the segmentation, by default True.
 
     Returns
     -------
-    tuple[NiftiGz, NiftiGz]
-        A tuple containing the output label map file and levels map file.
+    tuple[NiftiGz, NiftiGz | None]
+        The output label map and, when requested, the levels map.
 
     Raises
     ------
@@ -141,8 +144,9 @@ def run_totalspineseg(
         max_workers_nnunet=max_workers_nnunet,
         quiet=quiet,
         executable=executable,
+        collect_levels=collect_levels,
     )
-    return NiftiGz(label_map), NiftiGz(levels)
+    return NiftiGz(label_map), NiftiGz(levels) if levels is not None else None
 
 
 @python.define(outputs=["label_map"])
