@@ -27,6 +27,7 @@ from spinemira.workflows.segmentation.context import (
     require_sidecar,
     select_localizers,
     select_related_images,
+    totalspineseg_localizer,
 )
 
 
@@ -205,7 +206,7 @@ def segment_single_image_workflow(
     return published_label_map.file, levels
 
 
-@workflow.define(outputs=["label_map", "levels", "localizer"])
+@workflow.define(outputs=["label_map", "levels"])
 def segment_with_sidecar_workflow(
     image: NiftiGz,
     output_label_map: Path,
@@ -222,7 +223,6 @@ def segment_with_sidecar_workflow(
     use_totalspineseg: bool = True,
     use_musclemap: bool = True,
     localizer: NiftiGz | None = None,
-    create_localizer: bool = False,
 ):
     """Segment one image and publish a sidecar listing its actual labels."""
     options = dict(
@@ -269,26 +269,7 @@ def segment_with_sidecar_workflow(
         require_sidecar(label_map=segmented.label_map, sidecar=published.file),
         name="require_sidecar",
     )
-    sagittal_localizer = labeled.label_map
-    if create_localizer and use_musclemap:
-        stem = output_label_map.name.removesuffix("_dseg.nii.gz")
-        isolated = workflow.add(
-            segment_single_image_workflow(
-                image=image,
-                output_label_map=output_label_map.with_name(
-                    f"{stem}_localizerdseg.nii.gz"
-                ),
-                output_levels=output_label_map.with_name(
-                    f"{stem}_localizerlevels.nii.gz"
-                ),
-                use_totalspineseg=True,
-                use_musclemap=False,
-                **options,
-            ),
-            name="segment_localizer",
-        )
-        sagittal_localizer = isolated.label_map
-    return labeled.label_map, segmented.levels, sagittal_localizer
+    return labeled.label_map, segmented.levels
 
 
 @workflow.define(outputs=["label_map", "levels"])
@@ -431,7 +412,7 @@ def segment_dataset_workflow(
                 name="select_related_images",
             )
             sag = workflow.add(
-                segment_with_sidecar_workflow(**options, create_localizer=True)
+                segment_with_sidecar_workflow(**options)
                 .split(
                     (
                         "image",
@@ -448,10 +429,16 @@ def segment_dataset_workflow(
             localizers = workflow.add(
                 select_localizers(
                     sagittal=related.sagittal,
-                    labels=sag.localizer,
+                    labels=sag.label_map,
                     sources=related.sources,
                 ),
                 name="select_localizers",
+            )
+            filtered_localizers = workflow.add(
+                totalspineseg_localizer()
+                .split("label_map", label_map=localizers.localizers)
+                .combine("label_map"),
+                name="filter_localizers",
             )
             ax = workflow.add(
                 segment_with_sidecar_workflow(**options)
@@ -460,7 +447,7 @@ def segment_dataset_workflow(
                     image=related.axial,
                     output_label_map=related.axial_labels,
                     output_levels=related.axial_levels,
-                    localizer=localizers.localizers,
+                    localizer=filtered_localizers.label_map,
                 )
                 .combine("image"),
                 name="segment_axial",

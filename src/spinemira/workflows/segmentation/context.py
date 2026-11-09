@@ -104,6 +104,19 @@ def select_localizers(
     return [mapping[source] for source in sources]
 
 
+@python.define(outputs=["label_map"])
+def totalspineseg_localizer(label_map: NiftiGz) -> NiftiGz:
+    """Keep only TotalSpineSeg labels in a segmentation used as a localizer."""
+    image = sitk.ReadImage(str(label_map))
+    values = sitk.GetArrayFromImage(image)
+    values[~np.isin(values, [member.value for member in TotalSpineSegLabels])] = 0
+    filtered = sitk.GetImageFromArray(values)
+    filtered.CopyInformation(image)
+    path = Path.cwd() / "totalspineseg_localizer.nii.gz"
+    sitk.WriteImage(filtered, str(path))
+    return NiftiGz(path)
+
+
 @python.define(outputs=["file"])
 def create_label_sidecar(
     label_map: NiftiGz, use_totalspineseg: bool, use_musclemap: bool
