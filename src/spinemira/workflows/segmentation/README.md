@@ -1,36 +1,23 @@
-# Combined segmentation workflow
+# Segmentation Workflow
 
-Runs TotalSpineSeg and MuscleMap on each image selected from a MIDS dataset.
-Each tool is used only when enabled and available. Commands (`totalspineseg`
-and `mm_segment`) are found on `PATH`, or supplied using `--totalspineseg-executable` and `--musclemap-executable`
-with absolute paths. Disable tools with `--no-use-totalspineseg` or
-`--no-use-musclemap` (YAML: `use_totalspineseg: false` or `use_musclemap: false`).
+The Segmentation Workflow segments images in a MIDS dataset using TotalSpineSeg [^1] and MuscleMap [^2]. When both tools run, their labels are merged with TotalSpineSeg taking priority. The workflow saves a `dseg` image and a JSON label sidecar as derivatives.
 
-Alternatively, set `TOTALSPINESEG_EXECUTABLE` and `MUSCLEMAP_EXECUTABLE` to
-the respective executable paths. These variables override the default command
-names; a different executable supplied through the CLI or YAML takes priority.
-If neither tool can run, processing is skipped.
+## Example
+
+The configuration file [example.yaml](./example.yaml) provides an example configuration. Run the workflow from the repository root with:
 
 ```bash
-python -m spinemira.workflows.segmentation \
-  --config src/spinemira/workflows/segmentation/example.yaml
+uv run python -m spinemira.workflows.segmentation --config ./src/spinemira/workflows/segmentation/example.yaml
 ```
 
-Outputs are saved under `derivatives/<output_derivative_name>/`:
+## Features
 
-- `*_dseg.nii.gz`: labels from the available enabled tool, or merged labels
-  when both tools run, retaining each tool's original label values.
-  TotalSpineSeg takes priority wherever its label is nonzero; MuscleMap fills
-  the background. MuscleMap is resampled to the TotalSpineSeg grid with
-  nearest-neighbor interpolation if their grids differ.
-- `*_levels.nii.gz`: the TotalSpineSeg levels map, only when TotalSpineSeg is used.
-  The workflow returns `None` for levels when only MuscleMap runs.
+- Skips disabled or unavailable tools; TotalSpineSeg requires a data directory when used.
+- Optionally segments sagittal images first and uses them to localize related axial images with `--sagittal-first`.
+- Reuses existing segmentations unless `--overwrite` is set. Use `--overwrite` when changing tool selection.
+- Supports GPU execution with `--device cuda`.
 
-Existing outputs are reused unless `--overwrite` is set; the levels file is
-required for reuse only when TotalSpineSeg is used. Use `--overwrite` when changing
-tool selection for an existing derivative. `totalspineseg_data_dir` is required
-only when TotalSpineSeg runs.
-Intermediate segmentations are retained in the Pydra task cache.
-For GPU execution, set `--device cuda`.
-MuscleMap options include `--musclemap-region`, `--musclemap-model`, and
-`--musclemap-model-version`.
+
+[^1]: Warszawer, Yehuda & Molinier, Nathan & Valosek, Jan & Benveniste, Pierre-Louis & Bédard, Sandrine & Shirbint, Emanuel & Mohamed, Feroze & Tsagkas, Charidimos & Kolind, Shannon & Lynd, Larry & Oh, Jiwon & Prat, Alexandre & Tam, Roger & Traboulsee, Anthony & Patten, Scott & Lee, Lisa Eunyoung & Achiron, Anat & Cohen-Adad, Julien. (2025). TotalSpineSeg: Robust Spine Segmentation with Landmark-Based Labeling in MRI. [10.13140/RG.2.2.31318.56649](https://doi.org/10.13140/RG.2.2.31318.56649).
+
+[^2]: McKay MJ, Weber KA 2nd, Wesselink EO, Smith ZA, Abbott R, Anderson DB, Ashton-James CE, Atyeo J, Beach AJ, Burns J, Clarke S, Collins NJ, Coppieters MW, Cornwall J, Crawford RJ, De Martino E, Dunn AG, Eyles JP, Feng HJ, Fortin M, Franettovich Smith MM, Galloway G, Gandomkar Z, Glastras S, Henderson LA, Hides JA, Hiller CE, Hilmer SN, Hoggarth MA, Kim B, Lal N, LaPorta L, Magnussen JS, Maloney S, March L, Nackley AG, O'Leary SP, Peolsson A, Perraton Z, Pool-Goudzwaard AL, Schnitzler M, Seitz AL, Semciw AI, Sheard PW, Smith AC, Snodgrass SJ, Sullivan J, Tran V, Valentin S, Walton DM, Wishart LR, Elliott JM. MuscleMap: An Open-Source, Community-Supported Consortium for Whole-Body Quantitative MRI of Muscle. J Imaging. 2024;10(11):262. [10.3390/jimaging10110262](https://doi.org/10.3390/jimaging10110262)
