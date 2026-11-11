@@ -330,7 +330,7 @@ def roi_inner_most(roi: sitk.Image, axis: int = 2, count: int = 3) -> sitk.Image
     if nonzero.size == 0:
         return roi  # Return original if there's no nonzero region
 
-    bounds_min, bounds_max = nonzero[:, 0].min(), nonzero[:, 0].max()
+    bounds_min, bounds_max = int(nonzero[:, 0].min()), int(nonzero[:, 0].max())
     bounds_range = bounds_max - bounds_min + 1  # Inclusive range
 
     # Ensure count isn't larger than bounds_range
