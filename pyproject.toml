@@ -36,18 +36,10 @@ dev = [
     "ruff>=0.14.2,<0.15",
     "mypy>=1.18.2,<2",
     "pre-commit>=4.3.0,<5",
-    "ipympl>=0.9.8,<0.10",
-    "jupyterlab>=4.4.10,<5",
     "scipy-stubs>=1.16.3.0,<2",
     "types-tqdm>=4.67.0.20250809,<5",
     "pandas-stubs>=2.3.2.250926,<3",
     "types-pyyaml>=6.0.12.20250915,<7",
-    "ipykernel>=7.1.0,<8",
-]
-
-segmentation = [
-    "totalspineseg[nnunetv2]>=20260623",
-    "kornia<0.8", # Auglab which is used by totalspineseg imports Tensor from kornia.core which is removed in future versions / 260615
 ]
 
 registration = [
@@ -60,11 +52,6 @@ spinemira-collect-metrics = "spinemira.workflows.metrics.collect.cli:main"
 spinemira-normalize-histogram = "spinemira.workflows.normalization.histogram.cli:main"
 spinemira-normalize-scale = "spinemira.workflows.normalization.scale.cli:main"
 spinemira-totalspineseg = "spinemira.workflows.totalspineseg.cli:main"
-
-[[tool.uv.index]]
-name = "gitlab-spinemira"
-url = "https://git.vgregion.se/api/v4/projects/6781/packages/pypi/simple"
-default = true
 
 [tool.hatch.build.targets.sdist]
 include = ["src/spinemira"]
