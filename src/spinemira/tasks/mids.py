@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 
 
 def _select_main_path(fileset: FileSet) -> Path:
-
     # If only one path is present, return that
     if len(fileset.fspaths) == 1:
         return list(fileset.fspaths)[0]
@@ -49,7 +48,6 @@ def _select_main_path(fileset: FileSet) -> Path:
 @converter
 @python.define(outputs=["out_file"])
 def fileset_to_nifti_gz(in_file: FileSet) -> NiftiGz:
-
     matches = [path for path in in_file.fspaths if NiftiGz.matches(path)]
 
     if len(matches) != 1:
@@ -329,12 +327,34 @@ def publish_derivative(
     destination: Path,
     overwrite: bool = False,
 ) -> FileSet:
+    """Publish a derivative and its accompanying files.
+
+    Files are placed together in the destination directory with the destination
+    stem. Source files must be separate from their destinations.
+
+    Parameters
+    ----------
+    file : FileSet
+        Derivative to publish, optionally including accompanying files
+    destination : Path
+        Destination path for the main file. Its parent and stem determine
+        where the files are published and how they are named
+    overwrite : bool, optional
+        Whether to overwrite existing destination files, by default False
+
+    Returns
+    -------
+    FileSet
+        Published derivative, preserving the input file-set type
+    """
+
+    logger.info(f"Destination: {destination}")
 
     published = file.copy(
         dest_dir=destination.parent,
         new_stem=get_stem(destination),
         mode=FileSet.CopyMode.copy,
-        collation=FileSet.CopyCollation.any,
+        collation=FileSet.CopyCollation.adjacent,
         make_dirs=True,
         overwrite=overwrite,
     )
