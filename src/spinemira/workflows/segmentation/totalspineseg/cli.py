@@ -22,8 +22,12 @@ def run_segment_dataset_workflow(
     axial_query: str = '`vp` == "ax"',
     rerun: bool = False,
     worker: str = "debug",
+    no_stalling: bool = True,
 ):
-    """Segment a dataset with TotalSpineSeg."""
+    """Segment a dataset with TotalSpineSeg.
+
+    Set no_stalling to pass --no-stalling to TotalSpineSeg (default True).
+    """
     wf = segment_dataset_workflow(
         dataset_root=Path(dataset_root).resolve(),
         image_query=image_query,
@@ -32,6 +36,7 @@ def run_segment_dataset_workflow(
         device=device,
         totalspineseg_executable=totalspineseg_executable,
         totalspineseg_quiet=totalspineseg_quiet,
+        no_stalling=no_stalling,
         overwrite=overwrite,
         sagittal_first=sagittal_first,
         sagittal_query=sagittal_query,

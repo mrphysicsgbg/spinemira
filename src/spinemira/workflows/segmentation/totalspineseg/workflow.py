@@ -144,6 +144,7 @@ def totalspineseg_workflow(
     quiet: bool = False,
     overwrite: bool = False,
     localizer: NiftiGz | None = None,
+    no_stalling: bool = True,
 ):
     """Segment one image with TotalSpineSeg and publish its label sidecar."""
     sidecar_path = output_label_map.with_name(get_stem(output_label_map) + ".json")
@@ -157,7 +158,7 @@ def totalspineseg_workflow(
         quiet=quiet,
         executable=executable,
         localizer=localizer,
-        no_stalling=True,
+        no_stalling=no_stalling,
         collect_levels=False,
     )
 
@@ -194,6 +195,7 @@ def totalspineseglocalizer_workflow(
     executable: str = "totalspineseg",
     quiet: bool = False,
     overwrite: bool = False,
+    no_stalling: bool = True,
 ):
     """Segment sagittal scans first and use them to localize axial scans."""
     options = dict(
@@ -202,6 +204,7 @@ def totalspineseglocalizer_workflow(
         executable=executable,
         quiet=quiet,
         overwrite=overwrite,
+        no_stalling=no_stalling,
     )
     sag = workflow.add(
         totalspineseg_workflow(**options)
@@ -254,6 +257,7 @@ def segment_dataset_workflow(
     sagittal_first: bool = False,
     sagittal_query: str = '`vp` == "sag"',
     axial_query: str = '`vp` == "ax"',
+    no_stalling: bool = True,
 ):
     """Segment a dataset, optionally localizing axial scans with sagittal scans."""
     if not is_totalspineseg_available(totalspineseg_executable):
@@ -293,6 +297,7 @@ def segment_dataset_workflow(
                 executable=totalspineseg_executable,
                 quiet=totalspineseg_quiet,
                 overwrite=overwrite,
+                no_stalling=no_stalling,
             )
             .split(
                 ("sagittal", "axial", "sources", "sagittal_labels", "axial_labels"),
@@ -315,6 +320,7 @@ def segment_dataset_workflow(
         executable=totalspineseg_executable,
         quiet=totalspineseg_quiet,
         overwrite=overwrite,
+        no_stalling=no_stalling,
     )
     images = workflow.add(
         query_mids(dataset_root=dataset_root, query=image_query, mids_index=mids.file),
