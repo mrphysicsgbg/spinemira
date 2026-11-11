@@ -28,6 +28,7 @@ def segment_single_image_workflow(
     overwrite: bool,
     device: str,
     totalspineseg_quiet: bool,
+    no_stalling: bool = False,
 ) -> tuple[NiftiGz, NiftiGz]:
 
     if output_label_map.exists() and output_levels.exists() and not overwrite:
@@ -42,6 +43,7 @@ def segment_single_image_workflow(
             data_dir=totalspineseg_data_dir,
             device=device,
             quiet=totalspineseg_quiet,
+            no_stalling=no_stalling,
         ),
         name="run_segmentation",
     )
@@ -72,6 +74,7 @@ def segment_dataset_workflow(
     overwrite: bool = False,
     device: str = "cpu",
     totalspineseg_quiet: bool = False,
+    no_stalling: bool = False,
 ):
     """
     Create a workflow for segmenting a dataset using TotalSpineSeg.
@@ -92,6 +95,9 @@ def segment_dataset_workflow(
         Device to run inference on (e.g., "cpu", "cuda"), by default "cpu".
     totalspineseg_quiet : bool, optional
         Whether to suppress TotalSpineSeg logging output, by default False.
+
+    no_stalling : bool, optional
+        Pass --no-stalling to TotalSpineSeg, by default False.
 
     Returns
     -------
@@ -147,6 +153,7 @@ def segment_dataset_workflow(
         segment_single_image_workflow(
             totalspineseg_data_dir=totalspineseg_data_dir,
             totalspineseg_quiet=totalspineseg_quiet,
+            no_stalling=no_stalling,
             device=device,
             overwrite=overwrite,
         )

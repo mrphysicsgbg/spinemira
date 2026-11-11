@@ -9,6 +9,8 @@ python -m spinemira.workflows.segmentation.totalspineseg --dataset-root /path/to
   --image-query '`source` == "raw"' --totalspineseg-data-dir /path/to/models
 ```
 
+The workflow passes `--no-stalling` to TotalSpineSeg by default. Use `--no-no-stalling` to disable it, or set `no_stalling: false` in a YAML configuration.
+
 Add `--sagittal-first` to segment sagittal scans before related axial scans, using the sagittal segmentations as localizers. `--sagittal-query` and `--axial-query` select orientations. Axial images without exactly one matching sagittal image in the same subject and session are skipped.
 
 MuscleMap [^2]:

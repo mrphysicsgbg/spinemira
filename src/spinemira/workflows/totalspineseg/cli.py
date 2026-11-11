@@ -16,6 +16,7 @@ def run_segment_dataset_workflow(
     totalspineseg_quiet: bool = False,
     rerun: bool = False,
     worker: str = "debug",
+    no_stalling: bool = False,
 ):
     """
     Execute the TotalSpineSeg segmentation workflow.
@@ -36,6 +37,8 @@ def run_segment_dataset_workflow(
         Device to run inference on (e.g., "cpu", "cuda"), by default "cpu".
     totalspineseg_quiet : bool, optional
         Whether to suppress TotalSpineSeg logging output, by default False.
+    no_stalling : bool, optional
+        Pass --no-stalling to TotalSpineSeg, by default False.
     rerun : bool, optional
         Whether to rerun the workflow even if outputs exist, by default False.
     worker : str, optional
@@ -53,6 +56,7 @@ def run_segment_dataset_workflow(
         overwrite=overwrite,
         device=device,
         totalspineseg_quiet=totalspineseg_quiet,
+        no_stalling=no_stalling,
     )
 
     wf(worker=worker, rerun=rerun, propagate_rerun=True)
