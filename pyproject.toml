@@ -51,8 +51,7 @@ segmentation = [
 ]
 
 registration = [
-    "python-stk (>=0.4,<0.5)",
-    "pydeform (>=0.5.2,<0.6.0)",
+    "pydeform (>=0.6.0,<0.7.0)",
 ]
 
 [project.scripts]
