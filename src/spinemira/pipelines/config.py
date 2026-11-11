@@ -135,7 +135,7 @@ def with_cli_config(
                     env_cfg[key] = _auto_cast(val)
 
             # Check which CLI flags were explicitly provided
-            provided = set(_provided_keys(argv))
+            provided = set(_provided_keys(argv, set(signature.parameters)))
 
             # Merge with precedence: defaults -> YAML -> ENV -> CLI(explicit only)
             final = dict(defaults)
@@ -189,12 +189,16 @@ def _serialize_args(args: dict[str, Any]) -> dict[str, Any]:
     return {k: convert(v) for k, v in args.items()}
 
 
-def _provided_keys(argv: list[str]) -> list[str]:
+def _provided_keys(
+    argv: list[str], parameter_names: set[str] | None = None
+) -> list[str]:
     keys: list[str] = []
     for tok in argv:
         if tok.startswith("--"):
             k = tok[2:]
-            if k.startswith("no-"):
+            if k.startswith("no-") and (
+                parameter_names is None or k.replace("-", "_") not in parameter_names
+            ):
                 k = k[3:]
             keys.append(k.replace("-", "_"))
     return keys
